@@ -1,0 +1,3009 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Use sample spaces, events and the rules of probability; compute conditional probabilities; reason about independence and reliability; apply Bayes’ theorem; count outcomes; and estimate probabilities by simulation.">
+
+<title>Probability – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Probability</h1>
+<p class="subtitle lead">The mathematics of uncertainty, checked by simulation</p>
+</div>
+
+<div>
+  <div class="description">
+    Use sample spaces, events and the rules of probability; compute conditional probabilities; reason about independence and reliability; apply Bayes’ theorem; count outcomes; and estimate probabilities by simulation.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 0 · Lesson 8 of 14</span> <span class="meta-item">Week 8 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>Every batch could have come out a little differently. Run the same reactor twice and you get two different yields; test the same sample twice and you get two slightly different readings. <strong>Probability</strong> is the mathematics of that uncertainty. It tells you which outcomes to expect, and how surprised to be by the ones you see. It’s also where intuition fails most often, so in this lesson you’ll check every rule with R by <strong>simulating</strong>: running a random experiment thousands of times, and counting.</p>
+<div class="fizz">
+<p>Engineers use probability every day, even when they don’t call it that. How likely is a pump to fail this month? How much should you trust an alarm? How many backup systems do you need? By the end of this lesson, you’ll be able to answer all three.</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>see what a probability means, and estimate one by simulation</li>
+<li>use the basic rules of probability</li>
+<li>compute conditional probabilities from real data</li>
+<li>work out the reliability of systems with backups</li>
+<li>use Bayes’ theorem to decide how much to trust an alarm</li>
+<li>count outcomes</li>
+</ul>
+<section id="what-is-a-probability" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-a-probability">What is a probability?</h2>
+<p>The probability of an event is the proportion of times it would happen if you repeated the random process over and over. A fair coin lands heads with probability 0.5: not in every set of ten flips, but in the long run.</p>
+<p>R can flip coins for you. <code>sample(x, size, replace = TRUE)</code> draws <code>size</code> values at random from <code>x</code>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"H"</span>, <span class="st">"T"</span>), <span class="at">size =</span> <span class="dv">10</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1] "H" "H" "H" "T" "H" "H" "H" "T" "T" "T"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>set.seed()</code> fixes R’s random number generator, so you get the same “random” results every time you run the code. Use it whenever results need to be reproducible. Leave it out, and every run is different.</p>
+<p>Flip a lot more coins, and the proportion of heads settles down:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>flips <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"H"</span>, <span class="st">"T"</span>), <span class="at">size =</span> <span class="dv">10000</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(flips <span class="sc">==</span> <span class="st">"H"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.499</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>running <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">flip =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10000</span>, <span class="at">proportion =</span> <span class="fu">cumsum</span>(flips <span class="sc">==</span> <span class="st">"H"</span>) <span class="sc">/</span> (<span class="dv">1</span><span class="sc">:</span><span class="dv">10000</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(running, <span class="fu">aes</span>(<span class="at">x =</span> flip, <span class="at">y =</span> proportion)) <span class="sc">+</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"#898781"</span>) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>()) <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"The proportion of heads settles down as the flips add up"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Number of flips (log scale)"</span>, <span class="at">y =</span> <span class="st">"Proportion of heads"</span>) <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-probability_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>At first the proportion jumps around a lot; after thousands of flips, it hugs 0.5. That’s the <strong>law of large numbers</strong>, which Lesson 11 makes precise. It’s also why simulation works: repeat an experiment enough times, and the proportion of times an event happens estimates its probability.</p>
+<p>Probability can also describe a <em>degree of belief</em>, as in “I’m 70% sure this catalyst is better”. That interpretation is the basis of Bayesian statistics, in Module 5.</p>
+</section>
+<section id="sample-spaces-and-events" class="level2">
+<h2 class="anchored" data-anchor-id="sample-spaces-and-events">Sample spaces and events</h2>
+<p>The <strong>sample space</strong> <span class="math inline">S</span> is the set of all possible outcomes of a random process. An <strong>event</strong> is a collection of outcomes. When all the outcomes are equally likely,</p>
+<p><span class="math display">
+P(A) = \frac{\text{number of outcomes in } A}{\text{number of outcomes in } S} .
+</span></p>
+<p>Rolling two dice has 36 equally likely outcomes. <code>expand.grid()</code> lists every combination as a data frame:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dice <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">die1 =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">die2 =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(dice)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 36</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dice)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   die1 die2</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1    1    1</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2    2    1</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3    3    1</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4    4    1</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5    5    1</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6    6    1</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(dice<span class="sc">$</span>die1 <span class="sc">+</span> dice<span class="sc">$</span>die2 <span class="sc">==</span> <span class="dv">7</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.1666667</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Six of the 36 outcomes add up to 7, so <span class="math inline">P(\text{total} = 7) = 6/36 = 1/6</span>. Using <code>mean()</code> on a TRUE/FALSE vector gives the proportion of <code>TRUE</code>s, which is exactly the formula above.</p>
+<p>Three ways of combining events have their own notation:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Notation</th>
+<th>Meaning</th>
+<th>In R</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">A^c</span></td>
+<td>not <span class="math inline">A</span> (the complement)</td>
+<td><code>!A</code></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">A \cup B</span></td>
+<td><span class="math inline">A</span> or <span class="math inline">B</span> (or both)</td>
+<td><code>A | B</code></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">A \cap B</span></td>
+<td><span class="math inline">A</span> and <span class="math inline">B</span></td>
+<td><code>A &amp; B</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="the-rules-of-probability" class="level2">
+<h2 class="anchored" data-anchor-id="the-rules-of-probability">The rules of probability</h2>
+<p>Every probability is between 0 (impossible) and 1 (certain), and the probabilities of all the outcomes in <span class="math inline">S</span> add up to 1. Two more rules do most of the work.</p>
+<p><strong>The complement rule.</strong> The probability that <span class="math inline">A</span> <em>doesn’t</em> happen is</p>
+<p><span class="math display">
+P(A^c) = 1 - P(A) .
+</span></p>
+<p>It’s often easier to work out the opposite of what you want. A plant has 4 pumps, and each has a 5% chance of failing this month, independently of the others. What’s the chance that <em>at least one</em> fails? “At least one” covers lots of cases, but its complement, “none fail”, is just one case: all four keep running, each with probability 0.95.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.95</span><span class="sc">^</span><span class="dv">4</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.1854938</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>About 19%, nearly four times the risk for a single pump. (Multiplying the 0.95s uses independence, coming up soon.)</p>
+<p><strong>The addition rule.</strong> The probability that <span class="math inline">A</span> <em>or</em> <span class="math inline">B</span> happens is</p>
+<p><span class="math display">
+P(A \cup B) = P(A) + P(B) - P(A \cap B) .
+</span></p>
+<p>You subtract <span class="math inline">P(A \cap B)</span> because the outcomes in both events would otherwise be counted twice. If <span class="math inline">A</span> and <span class="math inline">B</span> can’t happen together, they’re <strong>disjoint</strong> (or <em>mutually exclusive</em>), <span class="math inline">P(A \cap B) = 0</span>, and the probabilities simply add.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>high <span class="ot">&lt;-</span> dice<span class="sc">$</span>die1 <span class="sc">+</span> dice<span class="sc">$</span>die2 <span class="sc">&gt;=</span> <span class="dv">10</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>doubles <span class="ot">&lt;-</span> dice<span class="sc">$</span>die1 <span class="sc">==</span> dice<span class="sc">$</span>die2</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(high) <span class="sc">+</span> <span class="fu">mean</span>(doubles) <span class="sc">-</span> <span class="fu">mean</span>(high <span class="sc">&amp;</span> doubles)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.2777778</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(high <span class="sc">|</span> doubles)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.2777778</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Both give 10/36. The rolls (5, 5) and (6, 6) are high <em>and</em> doubles, and subtracting stops them from being counted twice.</p>
+<p><strong>Your turn.</strong> A plant runs 10 identical reactors. Each one has a 3% chance of an unplanned shutdown on any given day, independently of the others. What’s the probability of at least one shutdown today?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_atleastone" data-caption="Your turn · At least one shutdown">
+<div>
+<div id="webr-1" class="exercise-cell">
+
+</div>
+<script type="webr-1-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQXQgbGVhc3Qgb25lIHNodXRkb3duIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleF8wOF9hdGxlYXN0b25lIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJfX19fX18ifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_atleastone">
+<p>The complement of “at least one shutdown” is “no shutdowns”: all 10 reactors keep running, each with probability 0.97.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_atleastone">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.97</span><span class="sc">^</span><span class="dv">10</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 0.26. A 3% risk per reactor becomes a 26% chance that <em>something</em> stops today.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_atleastone" data-check="true">
+<script type="exercise-check-ex_08_atleastone-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2F0bGVhc3RvbmUiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpc1RSVUUoYWxsLmVxdWFsKGFzLm51bWVyaWMoLnJlc3VsdCksIDEgLSAwLjk3XjEwKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogYWJvdXQgMC4yNi4gU21hbGwgcmlza3MgYWRkIHVwIGZhc3QgYWNyb3NzIG1hbnkgdW5pdHMhXCIpXG59IGVsc2UgaWYgKGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0KSwgMC45N14xMCkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJUaGF0J3MgdGhlIGNoYW5jZSBvZiBubyBzaHV0ZG93bnMuIFN1YnRyYWN0IGl0IGZyb20gMS5cIilcbn0gZWxzZSBpZiAoaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQpLCAwLjMpKSkge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiQWRkaW5nIDMlIHRlbiB0aW1lcyBkb3VibGUtY291bnRzIHRoZSBkYXlzIHdpdGggdHdvIG9yIG1vcmUgc2h1dGRvd25zLiBVc2UgdGhlIGNvbXBsZW1lbnQgaW5zdGVhZC5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSB0aGUgY29tcGxlbWVudDogMSAtIDAuOTdeMTAuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Now check it by simulation.</strong> <code>runif(10)</code> draws 10 random numbers between 0 and 1, so <code>runif(10) &lt; 0.03</code> is <code>TRUE</code> for each reactor that shuts down. <code>replicate()</code> repeats a whole day 10,000 times. Estimate the probability.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_sim" data-caption="Your turn · Simulate 10,000 days">
+<div>
+<div id="webr-3" class="exercise-cell">
+
+</div>
+<script type="webr-3-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgU2ltdWxhdGUgMTAsMDAwIGRheXMiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3NpbSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic2V0LnNlZWQoNDIpXG5kYXlzIDwtIHJlcGxpY2F0ZSgxMDAwMCwgYW55KHJ1bmlmKDEwKSA8IDAuMDMpKVxuX19fX19fIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_sim">
+<p><code>days</code> is a TRUE/FALSE vector, <code>TRUE</code> for each day with at least one shutdown. Its mean is the proportion of such days.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_sim">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>days <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">10000</span>, <span class="fu">any</span>(<span class="fu">runif</span>(<span class="dv">10</span>) <span class="sc">&lt;</span> <span class="fl">0.03</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(days)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_sim" data-check="true">
+<script type="exercise-check-ex_08_sim-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3NpbSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGxlbmd0aCgucmVzdWx0KSA9PSAxICYmIGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgYWJzKC5yZXN1bHQgLSAoMSAtIDAuOTdeMTApKSA8IDAuMDMpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IHBhc3RlMChcIkNvcnJlY3Q6IHRoZSBzaW11bGF0aW9uIGdpdmVzIFwiLCByb3VuZCgucmVzdWx0LCAzKSwgXCIsIGNsb3NlIHRvIHRoZSBleGFjdCAwLjI2My5cIikpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBSZXR1cm4gbWVhbihkYXlzKS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="conditional-probability" class="level2">
+<h2 class="anchored" data-anchor-id="conditional-probability">Conditional probability</h2>
+<p>Probabilities change when you learn something. The <strong>conditional probability</strong> of <span class="math inline">A</span> given <span class="math inline">B</span> is the probability of <span class="math inline">A</span> once you know that <span class="math inline">B</span> has happened:</p>
+<p><span class="math display">
+P(A \mid B) = \frac{P(A \cap B)}{P(B)} .
+</span></p>
+<p>In words: look only at the outcomes in <span class="math inline">B</span>, and ask what fraction of them are also in <span class="math inline">A</span>. Two-way tables make this concrete. Here are the batches, sorted by whether they ran hotter than 185 °C, and whether they were on spec:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>tab <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">hot =</span> batches<span class="sc">$</span>temp_C <span class="sc">&gt;</span> <span class="dv">185</span>, <span class="at">on_spec =</span> batches<span class="sc">$</span>on_spec)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">addmargins</span>(tab)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        on_spec</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; hot     FALSE TRUE Sum</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   FALSE     1   25  26</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   TRUE      8    4  12</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Sum       9   29  38</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>(The two batches with no temperature are left out, so there are 38.) Now read off conditional probabilities:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dv">4</span> <span class="sc">/</span> <span class="dv">12</span>     <span class="co"># P(on spec | hot): look only at the 12 hot batches</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.3333333</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="dv">25</span> <span class="sc">/</span> <span class="dv">26</span>    <span class="co"># P(on spec | not hot)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.9615385</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="dv">29</span> <span class="sc">/</span> <span class="dv">38</span>    <span class="co"># P(on spec), ignoring temperature</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.7631579</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Knowing that a batch ran hot changes its on-spec chance from 76% to 33%. That’s what conditional probability captures.</p>
+<p>Be careful: <span class="math inline">P(A \mid B)</span> and <span class="math inline">P(B \mid A)</span> are different things. <span class="math inline">P(\text{off spec} \mid \text{hot}) = 8/12 \approx 0.67</span>, but <span class="math inline">P(\text{hot} \mid \text{off spec}) = 8/9 \approx 0.89</span>. Mixing the two up is a classic mistake. It’s sometimes called the <em>prosecutor’s fallacy</em>, because of the courtroom mistakes it has caused.</p>
+<p>Rearranging the definition gives the <strong>multiplication rule</strong>: <span class="math inline">P(A \cap B) = P(A \mid B)\,P(B)</span>.</p>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex_08_union&quot;,&quot;ex_08_cond&quot;,&quot;ex_08_reverse&quot;]">
+<script type="exercise-setup-ex_08_union-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4XzA4X3VuaW9uIiwiZXhfMDhfY29uZCIsImV4XzA4X3JldmVyc2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoiYmF0Y2hlcyA8LSByZWFkLmNzdihcImRhdGEvcmVhY3Rvcl9iYXRjaGVzLmNzdlwiKSJ9
+</script>
+<script type="exercise-setup-ex_08_cond-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4XzA4X3VuaW9uIiwiZXhfMDhfY29uZCIsImV4XzA4X3JldmVyc2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoiYmF0Y2hlcyA8LSByZWFkLmNzdihcImRhdGEvcmVhY3Rvcl9iYXRjaGVzLmNzdlwiKSJ9
+</script>
+<script type="exercise-setup-ex_08_reverse-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4XzA4X3VuaW9uIiwiZXhfMDhfY29uZCIsImV4XzA4X3JldmVyc2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoiYmF0Y2hlcyA8LSByZWFkLmNzdihcImRhdGEvcmVhY3Rvcl9iYXRjaGVzLmNzdlwiKSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> What’s the probability that a batch used catalyst B, given that it was on spec? Then the next exercise asks it the other way round.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_reverse" data-caption="Your turn · P(catalyst B | on spec)">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgUChjYXRhbHlzdCBCIHwgb24gc3BlYykiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3JldmVyc2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6Il9fX19fXyJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_reverse">
+<p>Look only at the on-spec batches, <code>batches$catalyst[batches$on_spec]</code>, then find the proportion that are <code>"B"</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_reverse">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(batches<span class="sc">$</span>catalyst[batches<span class="sc">$</span>on_spec] <span class="sc">==</span> <span class="st">"B"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>10 of the 31 on-spec batches used catalyst B: about 0.32.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_reverse" data-check="true">
+<script type="exercise-check-ex_08_reverse-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3JldmVyc2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImIgPC0gcmVhZC5jc3YoXCJkYXRhL3JlYWN0b3JfYmF0Y2hlcy5jc3ZcIilcbmlmIChpc1RSVUUoYWxsLmVxdWFsKGFzLm51bWVyaWMoLnJlc3VsdCksIG1lYW4oYiRjYXRhbHlzdFtiJG9uX3NwZWNdID09IFwiQlwiKSkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IDEwIG9mIHRoZSAzMSBvbi1zcGVjIGJhdGNoZXMsIGFib3V0IDAuMzIuXCIpXG59IGVsc2UgaWYgKGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0KSwgbWVhbihiJG9uX3NwZWNbYiRjYXRhbHlzdCA9PSBcIkJcIl0pKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyBQKG9uIHNwZWMgfCBjYXRhbHlzdCBCKSwgdGhlIG90aGVyIHdheSByb3VuZC4gTG9vayBvbmx5IGF0IHRoZSBvbi1zcGVjIGJhdGNoZXMuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBUcnkgbWVhbihiYXRjaGVzJGNhdGFseXN0W2JhdGNoZXMkb25fc3BlY10gPT0gXFxcIkJcXFwiKS5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>And the other way round.</strong> What’s the probability that a batch was on spec, given that it used catalyst B?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_cond" data-caption="Your turn · P(on spec | catalyst B)">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgUChvbiBzcGVjIHwgY2F0YWx5c3QgQikiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2NvbmQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6Il9fX19fXyJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_cond">
+<p>Look only at the catalyst B batches, <code>batches$on_spec[batches$catalyst == "B"]</code>, then take the mean.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_cond">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(batches<span class="sc">$</span>on_spec[batches<span class="sc">$</span>catalyst <span class="sc">==</span> <span class="st">"B"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>10 of the 12 catalyst B batches: about 0.83, very different from 0.32!</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_cond" data-check="true">
+<script type="exercise-check-ex_08_cond-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2NvbmQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImIgPC0gcmVhZC5jc3YoXCJkYXRhL3JlYWN0b3JfYmF0Y2hlcy5jc3ZcIilcbmlmIChpc1RSVUUoYWxsLmVxdWFsKGFzLm51bWVyaWMoLnJlc3VsdCksIG1lYW4oYiRvbl9zcGVjW2IkY2F0YWx5c3QgPT0gXCJCXCJdKSkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGFib3V0IDAuODMuIFNhbWUgMTAgYmF0Y2hlcyBvbiB0b3AsIGJ1dCBhIGRpZmZlcmVudCBncm91cCB1bmRlcm5lYXRoLCBzbyBhIHZlcnkgZGlmZmVyZW50IHByb2JhYmlsaXR5LlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gQW1vbmcgdGhlIGNhdGFseXN0IEIgYmF0Y2hlcywgd2hhdCBwcm9wb3J0aW9uIHdlcmUgb24gc3BlYz9cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>One more.</strong> What’s the probability that a batch ran on the night shift <em>or</em> used catalyst B (or both)?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_union" data-caption="Your turn · The addition rule">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIGFkZGl0aW9uIHJ1bGUiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3VuaW9uIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJfX19fX18ifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_union">
+<p>Combine the two conditions with <code>|</code> and take the mean. Or use <span class="math inline">P(A) + P(B) - P(A \cap B)</span>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_union">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(batches<span class="sc">$</span>shift <span class="sc">==</span> <span class="st">"night"</span> <span class="sc">|</span> batches<span class="sc">$</span>catalyst <span class="sc">==</span> <span class="st">"B"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_union" data-check="true">
+<script type="exercise-check-ex_08_union-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3VuaW9uIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQpLCAyMy80MCkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IDAuNTc1LiBUaGF0J3MgMTggbmlnaHQgYmF0Y2hlcyBwbHVzIDEyIGNhdGFseXN0IEIgYmF0Y2hlcywgbWludXMgdGhlIDcgdGhhdCBhcmUgYm90aC5cIilcbn0gZWxzZSBpZiAoaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQpLCAzMC80MCkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJZb3UgY291bnRlZCB0aGUgNyBuaWdodC1zaGlmdCBjYXRhbHlzdCBCIGJhdGNoZXMgdHdpY2UuIFN1YnRyYWN0IFAoYm90aCkuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBUcnkgbWVhbihiYXRjaGVzJHNoaWZ0ID09IFxcXCJuaWdodFxcXCIgfCBiYXRjaGVzJGNhdGFseXN0ID09IFxcXCJCXFxcIikuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="independence-and-reliability" class="level2">
+<h2 class="anchored" data-anchor-id="independence-and-reliability">Independence and reliability</h2>
+<p>Two events are <strong>independent</strong> if knowing that one happened doesn’t change the probability of the other:</p>
+<p><span class="math display">
+P(A \mid B) = P(A), \quad \text{or equivalently} \quad P(A \cap B) = P(A)\,P(B) .
+</span></p>
+<p>The two dice are independent: the first die doesn’t affect the second, so the probability of double sixes is <span class="math inline">\frac16 \times \frac16 = \frac{1}{36}</span>. Temperature and on-spec are clearly <em>not</em> independent in our batches: 33% of the hot batches were on spec, against 76% overall.</p>
+<p>Don’t confuse <em>independent</em> with <em>disjoint</em>. Disjoint events can’t happen together, so if one happens, the other certainly didn’t. Knowing one tells you a lot about the other, so disjoint events (with nonzero probabilities) are always <em>dependent</em>.</p>
+<section id="systems-in-series-and-in-parallel" class="level3">
+<h3 class="anchored" data-anchor-id="systems-in-series-and-in-parallel">Systems in series and in parallel</h3>
+<p>Independence is the heart of <strong>reliability engineering</strong>. A process line where a feed pump, a reactor and a separator must <em>all</em> work is a <strong>series</strong> system. It only works if every part works, so you multiply:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fl">0.95</span> <span class="sc">*</span> <span class="fl">0.98</span> <span class="sc">*</span> <span class="fl">0.97</span>    <span class="co"># pump, reactor, separator</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.90307</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Three reliable parts make a line that works only about 90% of the time. A <strong>parallel</strong> system has backups: it works if <em>at least one</em> part works. Two pumps that are each 90% reliable, where either one is enough, fail only if <em>both</em> fail:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.10</span><span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.99</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>That’s 99%. Redundancy is why safety-critical equipment comes in pairs.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Assuming independence can be dangerous
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Two backup pumps on the <em>same</em> power supply aren’t independent: one power cut takes out both. Two pressure sensors calibrated with the same faulty reference will be wrong together. Engineers call these <strong>common-cause failures</strong>, and they’re why real systems fail more often than the multiplication rule promises. If each sensor fails 1% of the time, independence says both fail together only 0.01% of the time. With a shared cause, the true figure can be a hundred times higher.</p>
+</div>
+</div>
+<p><strong>Your turn.</strong> A cooling system has three identical pumps in parallel, and it keeps working as long as at least one pump runs. Each pump is 85% reliable, independently of the others. What’s the probability that the cooling works?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_reliability" data-caption="Your turn · Backup pumps">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQmFja3VwIHB1bXBzIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleF8wOF9yZWxpYWJpbGl0eSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiX19fX19fIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_reliability">
+<p>The cooling fails only if all three pumps fail, and each fails with probability 0.15. Use the complement.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_reliability">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.15</span><span class="sc">^</span><span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 99.7%: three so-so pumps make a very reliable system.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_reliability" data-check="true">
+<script type="exercise-check-ex_08_reliability-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3JlbGlhYmlsaXR5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQpLCAxIC0gMC4xNV4zKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogMC45OTY2MjUuIFRocmVlIDg1JSBwdW1wcyBpbiBwYXJhbGxlbCBhcmUgOTkuNyUgcmVsaWFibGUuXCIpXG59IGVsc2UgaWYgKGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0KSwgMC44NV4zKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyBhIHNlcmllcyBzeXN0ZW0sIHdoZXJlIGFsbCB0aHJlZSBtdXN0IHdvcmsuIEhlcmUsIGFueSBvbmUgcHVtcCBpcyBlbm91Z2guXCIpXG59IGVsc2UgaWYgKGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0KSwgMC4xNV4zKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyB0aGUgY2hhbmNlIHRoYXQgYWxsIHRocmVlIGZhaWwuIFN1YnRyYWN0IGl0IGZyb20gMS5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFRoZSBzeXN0ZW0gZmFpbHMgb25seSBpZiBhbGwgdGhyZWUgcHVtcHMgZmFpbDogMSAtIDAuMTVeMy5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+</section>
+<section id="bayes-theorem-should-you-trust-the-alarm" class="level2">
+<h2 class="anchored" data-anchor-id="bayes-theorem-should-you-trust-the-alarm">Bayes’ theorem: should you trust the alarm?</h2>
+<p>A gas detector sounds for 95% of real leaks. It also gives a false alarm on 5% of the days when there’s no leak. On any given day, there’s a 1% chance of a real leak. The alarm goes off. How likely is it that there’s really a leak?</p>
+<p>Most people guess about 95%. Let’s count it out over 10,000 days:</p>
+<ul>
+<li>On 100 of them there’s a leak, and the alarm sounds on 95 of those.</li>
+<li>On the other 9,900 there’s no leak, and 5% of them, 495 days, have a false alarm.</li>
+<li>So the alarm sounds on 95 + 495 = 590 days, and only 95 of those are real leaks.</li>
+</ul>
+<p><span class="math display">
+P(\text{leak} \mid \text{alarm}) = \frac{95}{590} \approx 0.16 .
+</span></p>
+<p>Only 16%! Because real leaks are rare, false alarms from the huge number of normal days swamp the real ones. Ignoring how common something is to begin with is called the <strong>base-rate fallacy</strong>.</p>
+<div class="fizz">
+<p>So should operators ignore the alarm? Absolutely not! Probability tells you how <em>likely</em> a leak is. The consequences tell you what to <em>do</em>. Checking a false alarm costs a few minutes; missing a real leak can cost lives. Good engineering decisions need both.</p>
+</div>
+<p>The general version is <strong>Bayes’ theorem</strong>:</p>
+<p><span class="math display">
+P(L \mid A) = \frac{P(A \mid L)\,P(L)}{P(A \mid L)\,P(L) + P(A \mid L^c)\,P(L^c)} .
+</span></p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>p_leak <span class="ot">&lt;-</span> <span class="fl">0.01</span>        <span class="co"># P(L), the base rate</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>detect <span class="ot">&lt;-</span> <span class="fl">0.95</span>        <span class="co"># P(A | L)</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>false_alarm <span class="ot">&lt;-</span> <span class="fl">0.05</span>   <span class="co"># P(A | no leak)</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>detect <span class="sc">*</span> p_leak <span class="sc">/</span> (detect <span class="sc">*</span> p_leak <span class="sc">+</span> false_alarm <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_leak))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.1610169</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A simulation of 100,000 days agrees:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100000</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>leak <span class="ot">&lt;-</span> <span class="fu">runif</span>(n) <span class="sc">&lt;</span> p_leak</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>alarm <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(leak, <span class="fu">runif</span>(n) <span class="sc">&lt;</span> detect, <span class="fu">runif</span>(n) <span class="sc">&lt;</span> false_alarm)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(leak[alarm])   <span class="co"># among the alarm days, the proportion with a real leak</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.1617421</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Go deeper: deriving Bayes’ theorem
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Write the definition of conditional probability both ways round: <span class="math inline">P(L \cap A) = P(L \mid A)\,P(A)</span> and <span class="math inline">P(L \cap A) = P(A \mid L)\,P(L)</span>. Setting them equal and dividing by <span class="math inline">P(A)</span>:</p>
+<p><span class="math display">
+P(L \mid A) = \frac{P(A \mid L)\,P(L)}{P(A)} .
+</span></p>
+<p>The denominator comes from the <strong>law of total probability</strong>: an alarm happens either with a leak or without one, two disjoint cases, so <span class="math inline">P(A) = P(A \mid L)P(L) + P(A \mid L^c)P(L^c)</span>. Bayes’ theorem turns <span class="math inline">P(\text{evidence} \mid \text{cause})</span>, which is often easy to measure, into <span class="math inline">P(\text{cause} \mid \text{evidence})</span>, which is what you actually want to know. Module 5 builds a whole approach to statistics on it.</p>
+</div>
+</div>
+</div>
+<p><strong>Your turn.</strong> A lab test screens batches for a contaminant. 2% of batches are contaminated. The test catches 90% of contaminated batches, and wrongly flags 5% of clean ones. A batch is flagged. What’s the probability it’s really contaminated?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_bayes" data-caption="Your turn · Bayes' theorem">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQmF5ZXMnIHRoZW9yZW0iLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2JheWVzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJwX2NvbnRhbSA8LSAwLjAyXG5jYXRjaCA8LSAwLjkwXG5mYWxzZV9mbGFnIDwtIDAuMDVcbl9fX19fXyJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_bayes">
+<p>The numerator is the true flags: <code>catch * p_contam</code>. The denominator adds the false ones: <code>false_flag * (1 - p_contam)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_bayes">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>p_contam <span class="ot">&lt;-</span> <span class="fl">0.02</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>catch <span class="ot">&lt;-</span> <span class="fl">0.90</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>false_flag <span class="ot">&lt;-</span> <span class="fl">0.05</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>catch <span class="sc">*</span> p_contam <span class="sc">/</span> (catch <span class="sc">*</span> p_contam <span class="sc">+</span> false_flag <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_contam))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 0.27. Out of 10,000 batches, 180 of the 200 contaminated ones get flagged, and so do 490 of the 9,800 clean ones: 180 / 670.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_bayes" data-check="true">
+<script type="exercise-check-ex_08_bayes-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2JheWVzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJ3YW50IDwtIDAuOSAqIDAuMDIgLyAoMC45ICogMC4wMiArIDAuMDUgKiAwLjk4KVxuaWYgKGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0KSwgd2FudCkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGFib3V0IDAuMjcsIGZhciBiZWxvdyB0aGUgdGVzdCdzIDkwJSBjYXRjaCByYXRlLiBUaGF0J3Mgd2h5IGZsYWdnZWQgYmF0Y2hlcyBnZXQgYSBzZWNvbmQsIG1vcmUgcHJlY2lzZSB0ZXN0LlwiKVxufSBlbHNlIGlmIChpc1RSVUUoYWxsLmVxdWFsKGFzLm51bWVyaWMoLnJlc3VsdCksIDAuOSkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJUaGF0J3MgUChmbGFnZ2VkIHwgY29udGFtaW5hdGVkKS4gQmF5ZXMnIHRoZW9yZW0gdHVybnMgaXQgYXJvdW5kLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gRGl2aWRlIHRoZSB0cnVlIGZsYWdzIGJ5IGFsbCB0aGUgZmxhZ3MuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="counting" class="level2">
+<h2 class="anchored" data-anchor-id="counting">Counting</h2>
+<p>When outcomes are equally likely, working out probabilities means counting. Two tools cover most cases:</p>
+<ul>
+<li><strong>Factorials.</strong> <span class="math inline">n! = n \times (n-1) \times \cdots \times 1</span> is the number of ways to put <span class="math inline">n</span> things in order. Five samples can be queued for the analyzer in <span class="math inline">5! = 120</span> ways.</li>
+<li><strong>Combinations.</strong> <span class="math inline">\binom{n}{k} = \frac{n!}{k!\,(n-k)!}</span>, read “<span class="math inline">n</span> choose <span class="math inline">k</span>”, is the number of ways to choose <span class="math inline">k</span> things from <span class="math inline">n</span>, when the order doesn’t matter.</li>
+</ul>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">factorial</span>(<span class="dv">5</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 120</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">choose</span>(<span class="dv">10</span>, <span class="dv">3</span>)     <span class="co"># ways to pick 3 of 10 candidate solvents to test</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 120</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">choose</span>(<span class="dv">40</span>, <span class="dv">5</span>)     <span class="co"># ways to pick 5 of our 40 batches for an audit</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 658008</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here’s a famous surprise: in a group of just 23 people, the chance that at least two of them share a birthday is over 50%. Use the complement. For no shared birthday, the second person must avoid one date, the third two dates, and so on (ignoring leap years):</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">prod</span>((<span class="dv">365</span><span class="sc">:</span><span class="dv">343</span>) <span class="sc">/</span> <span class="dv">365</span>)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.5072972</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>p_shared <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">60</span>, <span class="cf">function</span>(n) <span class="dv">1</span> <span class="sc">-</span> <span class="fu">prod</span>((<span class="dv">365</span><span class="sc">:</span>(<span class="dv">365</span> <span class="sc">-</span> n <span class="sc">+</span> <span class="dv">1</span>)) <span class="sc">/</span> <span class="dv">365</span>))</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">data.frame</span>(<span class="at">n =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">60</span>, <span class="at">p =</span> p_shared), <span class="fu">aes</span>(<span class="at">x =</span> n, <span class="at">y =</span> p)) <span class="sc">+</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"#898781"</span>) <span class="sc">+</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> <span class="fu">data.frame</span>(<span class="at">n =</span> <span class="dv">23</span>, <span class="at">p =</span> p_shared[<span class="dv">23</span>]), <span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"#C2416C"</span>) <span class="sc">+</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"With 23 people, a shared birthday is more likely than not"</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Number of people"</span>, <span class="at">y =</span> <span class="st">"P(at least two share a birthday)"</span>) <span class="sc">+</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-probability_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Your turn.</strong> In a lab group of 30 people, what’s the probability that at least two share a birthday?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_birthday" data-caption="Your turn · A birthday in common">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQSBiaXJ0aGRheSBpbiBjb21tb24iLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2JpcnRoZGF5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJfX19fX18ifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_birthday">
+<p>Adapt <code>1 - prod((365:343) / 365)</code>, which was for 23 people. For 30 people, the last factor is <span class="math inline">336/365</span>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_birthday">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">prod</span>((<span class="dv">365</span><span class="sc">:</span><span class="dv">336</span>) <span class="sc">/</span> <span class="dv">365</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 71%: in most groups of 30, two people share a birthday.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_birthday" data-check="true">
+<script type="exercise-check-ex_08_birthday-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X2JpcnRoZGF5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJ3YW50IDwtIDEgLSBwcm9kKCgzNjU6MzM2KSAvIDM2NSlcbmlmIChpc1RSVUUoYWxsLmVxdWFsKGFzLm51bWVyaWMoLnJlc3VsdCksIHdhbnQpKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBhYm91dCAwLjcwNi4gVGltZSB0byBjaGVjayB5b3VyIGxhYiBncm91cCFcIilcbn0gZWxzZSBpZiAoaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQpLCAxIC0gcHJvZCgoMzY1OjMzNSkgLyAzNjUpKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyBmb3IgMzEgcGVvcGxlLiAzNjU6MzM2IGhhcyAzMCBudW1iZXJzLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVHJ5IDEgLSBwcm9kKCgzNjU6MzM2KSAvIDM2NSkuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="simulation-when-the-math-gets-hard" class="level2">
+<h2 class="anchored" data-anchor-id="simulation-when-the-math-gets-hard">Simulation: when the math gets hard</h2>
+<p>Many probabilities are hard to work out exactly, but easy to simulate. <code>replicate(n, expression)</code> repeats a random experiment <code>n</code> times and collects the results. Here’s the birthday problem by brute force:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>shared <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">10000</span>, <span class="fu">any</span>(<span class="fu">duplicated</span>(<span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">365</span>, <span class="dv">23</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>))))</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(shared)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.5057</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><code>duplicated()</code> marks values that already appeared earlier in a vector, and <code>any()</code> asks whether any of them is <code>TRUE</code>. The simulation lands close to the exact 0.507. More repetitions give a more accurate estimate, and Lesson 11 shows exactly how the accuracy grows. Simulation is one of the most useful tools you’ll ever learn, and Module 4 is largely about it.</p>
+<div class="cell" data-layout-align="center">
+<div>
+<div id="webr-18" class="exercise-cell">
+
+</div>
+<script type="webr-18-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiIyBDaGFuZ2UgdGhlIGdyb3VwIHNpemUgYW5kIHdhdGNoIHRoZSBjaGFuY2Ugb2YgYSBzaGFyZWQgYmlydGhkYXkgY2hhbmdlXG5uX3Blb3BsZSA8LSAyM1xuZXhhY3QgPC0gMSAtIHByb2QoKDM2NTooMzY1IC0gbl9wZW9wbGUgKyAxKSkgLyAzNjUpXG5zaW11bGF0ZWQgPC0gbWVhbihyZXBsaWNhdGUoNTAwMCwgYW55KGR1cGxpY2F0ZWQoc2FtcGxlKDE6MzY1LCBuX3Blb3BsZSwgcmVwbGFjZSA9IFRSVUUpKSkpKVxuYyhleGFjdCA9IGV4YWN0LCBzaW11bGF0ZWQgPSBzaW11bGF0ZWQpIn0=
+</script>
+</div>
+</div>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · Two out of three.</strong> A reactor’s emergency shutdown uses three temperature sensors and “votes”: it trips if <em>at least two</em> of the three detect an overheat. Each sensor detects it with probability 0.95, independently. Complete the simulation to estimate the probability that the system trips.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_voting" data-caption="Challenge · 2-out-of-3 voting">
+<div>
+<div id="webr-19" class="exercise-cell">
+
+</div>
+<script type="webr-19-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgMi1vdXQtb2YtMyB2b3RpbmciLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3ZvdGluZyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic2V0LnNlZWQoNylcbnRyaXBzIDwtIHJlcGxpY2F0ZSgxMDAwMCwge1xuICBkZXRlY3RlZCA8LSBydW5pZigzKSA8IDAuOTUgICAgICMgVFJVRSBmb3IgZWFjaCBzZW5zb3IgdGhhdCBkZXRlY3RzIGl0XG4gIF9fX19fX1xufSlcbm1lYW4odHJpcHMpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_voting">
+<p><code>sum(detected)</code> counts the sensors that detected the overheat. The system trips if that count is at least 2.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_voting">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> <span class="fu">replicate</span>(<span class="dv">10000</span>, {</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  detected <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">3</span>) <span class="sc">&lt;</span> <span class="fl">0.95</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(detected) <span class="sc">&gt;=</span> <span class="dv">2</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(trips)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 0.993. The exact answer is <span class="math inline">3(0.95)^2(0.05) + 0.95^3 = 0.99275</span>: exactly two sensors detect, or all three do. Voting systems are popular in process safety because they’re reliable <em>and</em> they don’t trip just because one sensor misbehaves.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_voting" data-check="true">
+<script type="exercise-check-ex_08_voting-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X3ZvdGluZyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGxlbmd0aCgucmVzdWx0KSA9PSAxICYmIGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgYWJzKC5yZXN1bHQgLSAwLjk5Mjc1KSA8IDAuMDA1KSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBwYXN0ZTAoXCJDb3JyZWN0OiBhYm91dCBcIiwgcm91bmQoLnJlc3VsdCwgMyksIFwiLiBUaGUgZXhhY3QgYW5zd2VyIGlzIDAuOTkyNzUuXCIpKVxufSBlbHNlIGlmIChsZW5ndGgoLnJlc3VsdCkgPT0gMSAmJiBpcy5udW1lcmljKC5yZXN1bHQpICYmIGFicygucmVzdWx0IC0gMC45NV4zKSA8IDAuMDEpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyB0aGUgY2hhbmNlIGFsbCB0aHJlZSBkZXRlY3QgaXQuIFRoZSBzeXN0ZW0gb25seSBuZWVkcyB0d286IHN1bShkZXRlY3RlZCkgPj0gMi5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFRoZSBsYXN0IGxpbmUgaW5zaWRlIHRoZSBicmFjZXMgc2hvdWxkIGJlIHN1bShkZXRlY3RlZCkgPj0gMi5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Challenge 2 · The Monty Hall problem.</strong> On a game show, a prize is behind one of three doors, and goats are behind the other two. You pick a door. The host, who knows where the prize is, opens one of the <em>other</em> doors to reveal a goat, and offers to let you switch. Should you? Complete the simulation so that <code>play()</code> returns <code>TRUE</code> when switching wins.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_monty" data-caption="Challenge · Monty Hall">
+<div>
+<div id="webr-21" class="exercise-cell">
+
+</div>
+<script type="webr-21-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgTW9udHkgSGFsbCIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXhfMDhfbW9udHkiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNldC5zZWVkKDEpXG5wbGF5IDwtIGZ1bmN0aW9uKCkge1xuICBwcml6ZSA8LSBzYW1wbGUoMTozLCAxKVxuICBwaWNrIDwtIHNhbXBsZSgxOjMsIDEpXG4gIGdvYXRzIDwtIHNldGRpZmYoMTozLCBjKHByaXplLCBwaWNrKSkgICAgICMgZG9vcnMgdGhlIGhvc3QgbWF5IG9wZW5cbiAgb3BlbmVkIDwtIGlmIChsZW5ndGgoZ29hdHMpID09IDEpIGdvYXRzIGVsc2Ugc2FtcGxlKGdvYXRzLCAxKVxuICBzd2l0Y2hlZCA8LSBzZXRkaWZmKDE6MywgYyhwaWNrLCBvcGVuZWQpKVxuICBfX19fX19cbn1cbm1lYW4ocmVwbGljYXRlKDEwMDAwLCBwbGF5KCkpKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex_08_monty">
+<p>After switching, you win if the door you switched to is the one with the prize.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex_08_monty">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>play <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  prize <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  pick <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  goats <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="fu">c</span>(prize, pick))</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  opened <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">length</span>(goats) <span class="sc">==</span> <span class="dv">1</span>) goats <span class="cf">else</span> <span class="fu">sample</span>(goats, <span class="dv">1</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  switched <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="fu">c</span>(pick, opened))</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  switched <span class="sc">==</span> prize</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">replicate</span>(<span class="dv">10000</span>, <span class="fu">play</span>()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Switching wins about two-thirds of the time! Your first pick is right only 1/3 of the time. In the other 2/3, the host is forced to leave the prize behind the door you switch to. (The <code>if</code> is needed because <code>sample(x, 1)</code> with a single number <code>x</code> samples from <code>1:x</code>, a well-known R trap.)</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex_08_monty" data-check="true">
+<script type="exercise-check-ex_08_monty-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4XzA4X21vbnR5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAobGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXMubnVtZXJpYygucmVzdWx0KSAmJiBhYnMoLnJlc3VsdCAtIDIvMykgPCAwLjAzKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBwYXN0ZTAoXCJDb3JyZWN0OiBzd2l0Y2hpbmcgd2lucyBhYm91dCBcIiwgcm91bmQoMTAwICogLnJlc3VsdCksIFwiJSBvZiB0aGUgdGltZS4gQWx3YXlzIHN3aXRjaCFcIikpXG59IGVsc2UgaWYgKGxlbmd0aCgucmVzdWx0KSA9PSAxICYmIGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgYWJzKC5yZXN1bHQgLSAxLzMpIDwgMC4wMykge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiVGhhdCdzIHRoZSBjaGFuY2Ugb2Ygd2lubmluZyBpZiB5b3Ugc3RheS4gQ29tcGFyZSB0aGUgc3dpdGNoZWQgZG9vciB3aXRoIHRoZSBwcml6ZS5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFRoZSBsYXN0IGxpbmUgb2YgcGxheSgpIHNob3VsZCBiZSBzd2l0Y2hlZCA9PSBwcml6ZS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> <span class="math inline">P(A) = 0.3</span>. What is <span class="math inline">P(\text{not } A)</span>?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">0.7</label></li>
+<li><label><input type="checkbox">0.3</label></li>
+<li><label><input type="checkbox">It depends on the other events</label></li>
+</ul>
+<div class="explain">
+<p>By the complement rule, <span class="math inline">P(A^c) = 1 - P(A) = 0.7</span>.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> <span class="math inline">A</span> and <span class="math inline">B</span> are disjoint, with <span class="math inline">P(A) = 0.2</span> and <span class="math inline">P(B) = 0.5</span>. What is <span class="math inline">P(A \text{ or } B)</span>?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">0.7</label></li>
+<li><label><input type="checkbox">0.1</label></li>
+<li><label><input type="checkbox">0.6</label></li>
+</ul>
+<div class="explain">
+<p>Disjoint events can’t happen together, so <span class="math inline">P(A \cap B) = 0</span> and the probabilities simply add.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> Two independent pumps are each 90% reliable. What’s the chance that both work?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">0.81</label></li>
+<li><label><input type="checkbox">0.99</label></li>
+<li><label><input type="checkbox">0.90</label></li>
+</ul>
+<div class="explain">
+<p>For independent events, <span class="math inline">P(A \cap B) = P(A)\,P(B) = 0.9 \times 0.9</span>. (0.99 is the chance that <em>at least one</em> works.)</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> Of the 12 hot batches, 8 were off spec. What does <span class="math inline">8/12</span> estimate?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked=""><span class="math inline">P(\text{off spec} \mid \text{hot})</span></label></li>
+<li><label><input type="checkbox"><span class="math inline">P(\text{hot} \mid \text{off spec})</span></label></li>
+<li><label><input type="checkbox"><span class="math inline">P(\text{off spec and hot})</span></label></li>
+</ul>
+<div class="explain">
+<p>You looked only at the hot batches and asked what fraction were off spec: a conditional probability, given hot.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> An alarm catches 99% of real faults. It goes off. What’s most likely true?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">There’s a 99% chance of a real fault</label></li>
+<li><label><input type="checkbox" checked="">The chance could still be fairly low, if real faults are rare</label></li>
+<li><label><input type="checkbox">It’s exactly 50%</label></li>
+</ul>
+<div class="explain">
+<p>With a low base rate, false alarms from the many normal days can outnumber the real ones. You need the base rate and the false-alarm rate to say more.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> Why use <code>set.seed()</code> before a simulation?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">To make the results more random</label></li>
+<li><label><input type="checkbox" checked="">To make the “random” results reproducible</label></li>
+<li><label><input type="checkbox">To make the simulation run faster</label></li>
+</ul>
+<div class="explain">
+<p>With the same seed, R generates the same sequence of random numbers, so you (and anyone else) get identical results.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You’ve just learned to reason about uncertainty. Here’s what you can do now:</p>
+<ul>
+<li><strong>Think long-run:</strong> a probability is a long-run proportion, and simulating many times estimates it.</li>
+<li><strong>Use the rules:</strong> complement <span class="math inline">P(A^c) = 1 - P(A)</span>, and addition <span class="math inline">P(A \cup B) = P(A) + P(B) - P(A \cap B)</span>.</li>
+<li><strong>Condition:</strong> <span class="math inline">P(A \mid B) = P(A \cap B) / P(B)</span>, which is not the same as <span class="math inline">P(B \mid A)</span>!</li>
+<li><strong>Design for reliability:</strong> multiply for systems in series, use the complement for backups in parallel, and watch out for common causes.</li>
+<li><strong>Trust alarms wisely:</strong> Bayes’ theorem reverses a conditional probability, and the base rate matters enormously.</li>
+<li><strong>Count:</strong> <span class="math inline">n!</span> counts orderings, <span class="math inline">\binom{n}{k}</span> counts selections, and <code>set.seed()</code> makes simulations reproducible.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Work in <code>week08.R</code>.</p>
+<ol type="1">
+<li><strong>Plot the birthday problem.</strong> Compute the exact probability of a shared birthday for groups of 1 to 80 people with <code>sapply()</code>. Add simulated estimates for groups of 10, 20, …, 80, and plot both on one chart. How many people make a shared birthday 99% likely?</li>
+<li><strong>Alarms and base rates.</strong> Write a function <code>p_real(base_rate, detect, false_alarm)</code>. Plot <span class="math inline">P(\text{real} \mid \text{alarm})</span> against base rates from 0.001 to 0.5, for a detector with 95% detection and 5% false alarms. At what base rate does an alarm first mean “more likely real than not”?</li>
+<li><strong>Design a system.</strong> A plant needs cooling that’s at least 99.9% reliable, and each pump is 80% reliable. How many pumps in parallel do you need? Answer with a <code>while</code> loop, then check it by simulation.</li>
+<li><strong>Monty Hall with more doors.</strong> Extend the simulation to 10 doors, where the host opens 8 goat doors and you can switch to the last closed one. What’s the chance switching wins? Explain why in a comment.</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>Sample space</dt>
+<dd>
+The set of all possible outcomes of a random process.
+</dd>
+<dt>Event</dt>
+<dd>
+A collection of outcomes, such as “the dice total 7”.
+</dd>
+<dt>Complement</dt>
+<dd>
+The event that <span class="math inline">A</span> doesn’t happen, written <span class="math inline">A^c</span>.
+</dd>
+<dt>Disjoint events</dt>
+<dd>
+Events that can’t happen at the same time (also called mutually exclusive).
+</dd>
+<dt>Conditional probability</dt>
+<dd>
+The probability of an event given that another one has happened, <span class="math inline">P(A \mid B)</span>.
+</dd>
+<dt>Independence</dt>
+<dd>
+Two events are independent when knowing one occurred doesn’t change the probability of the other.
+</dd>
+<dt>Reliability</dt>
+<dd>
+The probability that a component or system works. Series systems multiply reliabilities; parallel systems fail only if every part fails.
+</dd>
+<dt>Bayes’ theorem</dt>
+<dd>
+A formula that turns <span class="math inline">P(B \mid A)</span> into <span class="math inline">P(A \mid B)</span>, using the base rate <span class="math inline">P(A)</span>.
+</dd>
+<dt>Base-rate fallacy</dt>
+<dd>
+Ignoring how common something is when interpreting evidence about it.
+</dd>
+<dt>Simulation</dt>
+<dd>
+Estimating probabilities by repeating a random process many times on a computer.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li><em>Seeing Theory</em>, <a href="https://seeing-theory.brown.edu/basic-probability/index.html">“Basic Probability”</a> and <a href="https://seeing-theory.brown.edu/compound-probability/index.html">“Compound Probability”</a>. Beautiful interactive visualizations of these ideas, from Brown University.</li>
+<li><em>Introduction to Probability</em> by Blitzstein and Hwang, chapters 1–2, <a href="http://probabilitybook.net">free PDF</a>. The rigorous version, with counting, conditional probability and lots of puzzles. It pairs with Harvard’s Statistics 110 lectures.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyJdLCJyZXBvcyI6W119LCJyZW5kZXJfZGYiOiJkZWZhdWx0In0=
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yMSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMjE7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0yMSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIxID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMjEtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0yMS1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIxID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8yMSwge30pO1xuX3dlYnJfZmVlZGJhY2tfMjEgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIxLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xOSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTk7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xOSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE5ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTktY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xOS1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE5ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xOSwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTkgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE5LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTg7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE4ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTgtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7IGlkOiBgd2Vici0xOC1jb250ZW50c2AgfSwgYmxvY2suYXR0cik7XG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG5cbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG5fd2Vicl92YWx1ZV8xOCA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfMTgsIHt9KTtcbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtMyIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMztcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTMiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl8zID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMy1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTMtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV8zID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8zLCB7fSk7XG5fd2Vicl9mZWVkYmFja18zID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV8zLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8xO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0xLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMS1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzEsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzEgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL3JlYWN0b3JfYmF0Y2hlcy5jc3YiXQ==
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/00-foundations";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

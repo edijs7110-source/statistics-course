@@ -1,0 +1,2871 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Read programs written for SAS, SPSS and Stata, translate common procedures into R, understand why the same analysis can give different numbers in different software, and move data and results between tools safely.">
+
+<title>Working across statistical software – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Working across statistical software</h1>
+<p class="subtitle lead">Reading SAS, SPSS and Stata code, and moving data and results between tools</p>
+</div>
+
+<div>
+  <div class="description">
+    Read programs written for SAS, SPSS and Stata, translate common procedures into R, understand why the same analysis can give different numbers in different software, and move data and results between tools safely.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 1 · Lesson 14 of 14</span> <span class="meta-item">Week 29 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>Statisticians rarely work in one language alone. A colleague from the pharmaceutical side sends you a SAS program, the quality team keeps its analyses in SPSS, and an economist down the hall swears by Stata. You don’t need to master all three. But you do need to <em>read</em> their code, reproduce their numbers in R, and pass data and results back and forth without anything getting lost. This last lesson of the module shows you how, and warns you about the traps where the same analysis gives different answers.</p>
+<div class="fizz">
+<p>Think of it as learning to read a few dialects. You don’t need to speak them fluently, just enough to follow the conversation, and to notice when something gets lost in translation!</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>recognize the same data steps in SAS, SPSS, Stata and R</li>
+<li>read short SAS programs, SPSS syntax and Stata do-files, and translate them into R</li>
+<li>understand why software can disagree: missing values, quantiles, rounding and reference levels</li>
+<li>move data between tools without losing labels or values</li>
+<li>share results that others can use and check</li>
+</ul>
+<section id="one-analysis-four-languages" class="level2">
+<h2 class="anchored" data-anchor-id="one-analysis-four-languages">One analysis, four languages</h2>
+<p>All four languages do the same jobs, with different words. Here’s a phrasebook:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>SAS</th>
+<th>SPSS</th>
+<th>Stata</th>
+<th>R</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Open a dataset</td>
+<td><code>SET plant.batches;</code></td>
+<td><code>GET FILE='batches.sav'.</code></td>
+<td><code>use batches.dta</code></td>
+<td><code>read_csv()</code>, <code>read_sav()</code>, <code>read_dta()</code></td>
+</tr>
+<tr class="even">
+<td>Make a variable</td>
+<td><code>y = x / 100;</code></td>
+<td><code>COMPUTE y = x / 100.</code></td>
+<td><code>generate y = x / 100</code></td>
+<td><code>mutate(y = x / 100)</code></td>
+</tr>
+<tr class="odd">
+<td>Change values</td>
+<td><code>IF x &gt; 5 THEN y = 1;</code></td>
+<td><code>RECODE x (1 2 = 1) INTO y.</code></td>
+<td><code>replace y = 1 if x &gt; 5</code></td>
+<td><code>mutate()</code> with <code>if_else()</code> or <code>case_when()</code></td>
+</tr>
+<tr class="even">
+<td>Keep rows</td>
+<td><code>WHERE x &gt; 5;</code></td>
+<td><code>SELECT IF x &gt; 5.</code></td>
+<td><code>keep if x &gt; 5</code></td>
+<td><code>filter(x &gt; 5)</code></td>
+</tr>
+<tr class="odd">
+<td>Sort</td>
+<td><code>PROC SORT; BY x;</code></td>
+<td><code>SORT CASES BY x.</code></td>
+<td><code>sort x</code></td>
+<td><code>arrange(x)</code></td>
+</tr>
+<tr class="even">
+<td>Summarize by group</td>
+<td><code>PROC MEANS; CLASS g; VAR x;</code></td>
+<td><code>MEANS TABLES=x BY g.</code></td>
+<td><code>tabstat x, by(g) statistics(n mean sd)</code></td>
+<td><code>group_by(g) |&gt; summarise()</code></td>
+</tr>
+<tr class="odd">
+<td>Count</td>
+<td><code>PROC FREQ; TABLES a*b;</code></td>
+<td><code>CROSSTABS a BY b.</code></td>
+<td><code>tabulate a b</code></td>
+<td><code>count(a, b)</code></td>
+</tr>
+<tr class="even">
+<td>Regression</td>
+<td><code>PROC REG; MODEL y = x1 x2;</code></td>
+<td><code>REGRESSION /DEPENDENT y /METHOD=ENTER x1 x2.</code></td>
+<td><code>regress y x1 x2</code></td>
+<td><code>lm(y ~ x1 + x2)</code></td>
+</tr>
+<tr class="odd">
+<td>Merge</td>
+<td><code>MERGE a b; BY id;</code></td>
+<td><code>MATCH FILES /FILE=* /TABLE='b.sav' /BY id.</code></td>
+<td><code>merge 1:1 id using b</code></td>
+<td><code>left_join(a, b, by = "id")</code></td>
+</tr>
+</tbody>
+</table>
+<p>A few habits show at once. SAS and SPSS end every statement with punctuation, a semicolon or a period. SAS, SPSS and Stata all work on one “current” dataset at a time, while R can hold as many data frames as you like. And SAS and SPSS don’t care about upper and lower case in their commands, while R and Stata do.</p>
+</section>
+<section id="reading-sas" class="level2">
+<h2 class="anchored" data-anchor-id="reading-sas">Reading SAS</h2>
+<p>A SAS program is made of <strong>steps</strong>. A <strong>DATA step</strong> builds a dataset, row by row. A <strong>PROC step</strong> (short for procedure) analyzes one. Each step ends with <code>RUN;</code>. Here’s a typical program:</p>
+<pre class="sas"><code>DATA work.hot;
+  SET plant.batches;          /* read the batches table */
+  WHERE temp_C &gt; 180;         /* keep the hot batches */
+  yield_frac = yield_pct / 100;
+RUN;
+
+PROC MEANS DATA=work.hot N MEAN STD MAXDEC=2;
+  CLASS catalyst;             /* one row per catalyst */
+  VAR yield_pct;              /* summarize the yield */
+RUN;</code></pre>
+<p><code>plant.batches</code> means “the dataset <code>batches</code> in the library <code>plant</code>”, where a library is a folder of SAS datasets. <code>work</code> is the temporary library, which is deleted at the end of the session. Comments go between <code>/*</code> and <code>*/</code>. <code>MAXDEC=2</code> rounds the output to two decimals. In R, the whole program is one pipeline:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>batches <span class="sc">|&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(temp_C <span class="sc">&gt;</span> <span class="dv">180</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">yield_frac =</span> yield_pct <span class="sc">/</span> <span class="dv">100</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(catalyst) <span class="sc">|&gt;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mean =</span> <span class="fu">round</span>(<span class="fu">mean</span>(yield_pct), <span class="dv">2</span>), <span class="at">sd =</span> <span class="fu">round</span>(<span class="fu">sd</span>(yield_pct), <span class="dv">2</span>))</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 4</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   catalyst     n  mean    sd</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 A            5  57.5  1.89</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 B            6  55.9 13.5 </span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 C            2  65.2  0   </span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 D            2  65.1 12.6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex1_14_sas&quot;,&quot;ex1_14_spss&quot;,&quot;ex1_14_stata&quot;,&quot;ex1_14_quantile&quot;,&quot;ex1_14_export&quot;,&quot;ex1_14_sasmissing&quot;,&quot;ex1_14_reference&quot;]">
+<script type="exercise-setup-ex1_14_sas-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_spss-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_stata-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_quantile-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_export-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_sasmissing-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+<script type="exercise-setup-ex1_14_reference-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4MV8xNF9zYXMiLCJleDFfMTRfc3BzcyIsImV4MV8xNF9zdGF0YSIsImV4MV8xNF9xdWFudGlsZSIsImV4MV8xNF9leHBvcnQiLCJleDFfMTRfc2FzbWlzc2luZyIsImV4MV8xNF9yZWZlcmVuY2UiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShyZWFkcilcbmxpYnJhcnkoZHBseXIpXG5saWJyYXJ5KGhhdmVuKVxuYmF0Y2hlcyA8LSByZWFkX2NzdihcImRhdGEvYmF0Y2hlcy5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbnN1cnZleSA8LSByZWFkX3NhdihcImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdlwiKSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> Translate this SAS procedure into R. (<code>batches</code> is ready in every exercise.)</p>
+<pre class="sas"><code>PROC MEANS DATA=plant.batches N MEAN STD MIN MAX;
+  CLASS reactor;
+  VAR residence_min;
+RUN;</code></pre>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_sas" data-caption="Your turn · PROC MEANS">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgUFJPQyBNRUFOUyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgxXzE0X3NhcyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiYmF0Y2hlcyB8PlxuICBncm91cF9ieShfX19fX18pIHw+XG4gIHN1bW1hcmlzZShuID0gbigpLCBtZWFuID0gbWVhbihyZXNpZGVuY2VfbWluKSwgc2QgPSBzZChyZXNpZGVuY2VfbWluKSxcbiAgICAgICAgICAgIG1pbiA9IG1pbihyZXNpZGVuY2VfbWluKSwgbWF4ID0gbWF4KHJlc2lkZW5jZV9taW4pKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_sas">
+<p>The <code>CLASS</code> statement names the grouping variable, and <code>VAR</code> names the variable to summarize. Group by <code>reactor</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_sas">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>batches <span class="sc">|&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(reactor) <span class="sc">|&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mean =</span> <span class="fu">mean</span>(residence_min), <span class="at">sd =</span> <span class="fu">sd</span>(residence_min),</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">min =</span> <span class="fu">min</span>(residence_min), <span class="at">max =</span> <span class="fu">max</span>(residence_min))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>R1’s batches stayed in the reactor about 5 minutes longer, on average: 47.4 against 42.2 minutes.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_sas" data-check="true">
+<script type="exercise-check-ex1_14_sas-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9zYXMiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIGlkZW50aWNhbChhcy5jaGFyYWN0ZXIoLnJlc3VsdCRyZWFjdG9yKSwgYyhcIlIxXCIsIFwiUjJcIikpICYmXG4gICAgaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQkbWVhbiksIGMoNDcuMzUsIDQyLjE1KSkpICYmIGlzVFJVRShhbGwuZXF1YWwoYXMubnVtZXJpYygucmVzdWx0JG4pLCBjKDIwLCAyMCkpKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiA0Ny40IG1pbnV0ZXMgb24gUjEgYW5kIDQyLjIgb24gUjIuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBDTEFTUyByZWFjdG9yIGJlY29tZXMgZ3JvdXBfYnkocmVhY3RvcikuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="reading-spss-syntax" class="level2">
+<h2 class="anchored" data-anchor-id="reading-spss-syntax">Reading SPSS syntax</h2>
+<p>SPSS is mostly used through menus, but every menu action can be pasted as <strong>syntax</strong>, and analysts often share syntax files (<code>.sps</code>). Each command ends with a period, and options follow slashes:</p>
+<pre class="spss"><code>GET FILE='operator_survey.sav'.
+FREQUENCIES VARIABLES=role shift.
+MEANS TABLES=overtime_h BY role
+  /CELLS=COUNT MEAN STDDEV.
+RECODE workload (1 2 = 1) (3 = 2) (4 5 = 3) INTO workload3.
+VALUE LABELS workload3 1 'low' 2 'about right' 3 'high'.</code></pre>
+<p><code>FREQUENCIES</code> counts each value, <code>MEANS ... BY</code> summarizes one variable by another, and <code>RECODE ... INTO</code> makes a new variable from an old one, leaving the original as it was. In R, with haven:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>survey <span class="ot">&lt;-</span> <span class="fu">read_sav</span>(<span class="st">"data/operator_survey.sav"</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(survey, <span class="at">role =</span> <span class="fu">as_factor</span>(role))</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 2</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   role           n</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;fct&gt;      &lt;int&gt;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 operator      24</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 technician    15</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 engineer       9</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>survey <span class="sc">|&gt;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">workload3 =</span> <span class="fu">case_when</span>(workload <span class="sc">%in%</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"low"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                               workload <span class="sc">==</span> <span class="dv">3</span> <span class="sc">~</span> <span class="st">"about right"</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                               workload <span class="sc">%in%</span> <span class="dv">4</span><span class="sc">:</span><span class="dv">5</span> <span class="sc">~</span> <span class="st">"high"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(workload3)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 2</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   workload3       n</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;int&gt;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 about right    18</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 high           14</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 low            13</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 &lt;NA&gt;            3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Remember from Lesson 9 that <code>read_sav()</code> turns the user-defined missing code, 9 = “no answer”, into <code>NA</code>, so those three people end up in the <code>NA</code> row. In SPSS, the same three would be left out of the recode automatically, as missing. The results agree, but only because haven did the right thing for you.</p>
+<p><strong>Your turn.</strong> Translate <code>MEANS TABLES=overtime_h BY shift.</code> into R, with the shifts’ names.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_spss" data-caption="Your turn · MEANS ... BY">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgTUVBTlMgLi4uIEJZIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDFfMTRfc3BzcyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic3VydmV5IHw+XG4gIGdyb3VwX2J5KHNoaWZ0ID0gX19fX19fKSB8PlxuICBzdW1tYXJpc2UobiA9IG4oKSwgbWVhbiA9IG1lYW4ob3ZlcnRpbWVfaCksIHNkID0gc2Qob3ZlcnRpbWVfaCkpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_spss">
+<p><code>shift</code> is a labelled variable, so <code>as_factor(shift)</code> gives the names “day” and “night”.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_spss">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>survey <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">shift =</span> <span class="fu">as_factor</span>(shift)) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mean =</span> <span class="fu">mean</span>(overtime_h), <span class="at">sd =</span> <span class="fu">sd</span>(overtime_h))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 7.1 hours of overtime on the day shift, and 7.6 on nights.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_spss" data-check="true">
+<script type="exercise-check-ex1_14_spss-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9zcHNzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXMuZGF0YS5mcmFtZSgucmVzdWx0KSAmJiBpZGVudGljYWwoYXMuY2hhcmFjdGVyKC5yZXN1bHQkc2hpZnQpLCBjKFwiZGF5XCIsIFwibmlnaHRcIikpICYmXG4gICAgaXNUUlVFKGFsbC5lcXVhbChhcy5udW1lcmljKC5yZXN1bHQkbWVhbiksIGMoNy4wNzY5MjMxLCA3LjU5MDkwOTEpLCB0b2xlcmFuY2UgPSAxZS02KSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogNy4xIGhvdXJzIG9uIHRoZSBkYXkgc2hpZnQsIGFuZCA3LjYgb24gbmlnaHRzLlwiKVxufSBlbHNlIGlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIFwic2hpZnRcIiAlaW4lIG5hbWVzKC5yZXN1bHQpICYmIGlzLm51bWVyaWMoLnJlc3VsdCRzaGlmdCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRob3NlIGFyZSB0aGUgY29kZXMgMSBhbmQgMi4gVXNlIGFzX2ZhY3RvcihzaGlmdCkuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBHcm91cCBieSBzaGlmdCA9IGFzX2ZhY3RvcihzaGlmdCkuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="reading-stata" class="level2">
+<h2 class="anchored" data-anchor-id="reading-stata">Reading Stata</h2>
+<p>Stata’s commands are short, and a script of them is called a <strong>do-file</strong> (<code>.do</code>). Most commands follow the same pattern: the command, the variables, then <code>if</code> conditions, and options after a comma:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode stata code-with-copy"><code class="sourceCode stata"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="st">"batches.dta"</span>, <span class="kw">clear</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">generate</span> long_run = residence_min &gt; 50</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">tabulate</span> catalyst long_run</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">regress</span> yield_pct temp_C residence_min</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>generate</code> makes a new variable (<code>replace</code> changes an existing one), <code>tabulate</code> makes a frequency table, and <code>regress</code> fits a linear regression. <code>clear</code> throws away the dataset that was open before. In R:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>stata <span class="ot">&lt;-</span> <span class="fu">read_dta</span>(<span class="st">"data/batches.dta"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>stata <span class="sc">|&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">long_run =</span> residence_min <span class="sc">&gt;</span> <span class="dv">50</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(catalyst, long_run)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 8 × 3</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   catalyst long_run     n</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;lgl&gt;    &lt;int&gt;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 A        FALSE        6</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 A        TRUE         4</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 B        FALSE       10</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 B        TRUE         2</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5 C        FALSE        7</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6 C        TRUE         2</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7 D        FALSE        5</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8 D        TRUE         4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>Your turn.</strong> Translate <code>regress yield_pct temp_C residence_min</code>, and find the coefficient for the residence time.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_stata" data-caption="Your turn · regress">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgcmVncmVzcyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgxXzE0X3N0YXRhIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJmaXQgPC0gbG0oX19fX19fLCBkYXRhID0gYmF0Y2hlcylcbmNvZWYoZml0KSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_stata">
+<p>In Stata, the first variable after <code>regress</code> is the outcome, and the rest are the predictors: <code>yield_pct ~ temp_C + residence_min</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_stata">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(yield_pct <span class="sc">~</span> temp_C <span class="sc">+</span> residence_min, <span class="at">data =</span> batches)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(fit)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each extra minute of residence time adds about 0.64 percentage points of yield. Both Stata and R quietly drop the two batches with no temperature, so <code>nobs(fit)</code> is 38, in both. Regression is the whole of the next module!</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_stata" data-check="true">
+<script type="exercise-check-ex1_14_stata-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9zdGF0YSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgXCJyZXNpZGVuY2VfbWluXCIgJWluJSBuYW1lcygucmVzdWx0KSAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbW1wicmVzaWRlbmNlX21pblwiXV0gLSAwLjY0MzgzNDkpIDwgMWUtNikpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogYWJvdXQgMC42NCBwZXJjZW50YWdlIHBvaW50cyBvZiB5aWVsZCBwZXIgbWludXRlIG9mIHJlc2lkZW5jZSB0aW1lLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVHJ5IGxtKHlpZWxkX3BjdCB+IHRlbXBfQyArIHJlc2lkZW5jZV9taW4sIGRhdGEgPSBiYXRjaGVzKS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="same-data-different-numbers" class="level2">
+<h2 class="anchored" data-anchor-id="same-data-different-numbers">Same data, different numbers</h2>
+<p>Translate a program perfectly, and you can <em>still</em> get different numbers. Four differences cause most of the trouble.</p>
+<p><strong>1. Missing values in comparisons.</strong> Is a missing temperature less than 170? Each language answers differently:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Language</th>
+<th>Is <code>NA &lt; 170</code>?</th>
+<th>Is <code>NA &gt; 185</code>?</th>
+<th>So the missing values are…</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R</td>
+<td><code>NA</code></td>
+<td><code>NA</code></td>
+<td>dropped by <code>filter()</code></td>
+</tr>
+<tr class="even">
+<td>SPSS</td>
+<td>missing</td>
+<td>missing</td>
+<td>dropped by <code>SELECT IF</code></td>
+</tr>
+<tr class="odd">
+<td>SAS</td>
+<td><strong>true</strong></td>
+<td>false</td>
+<td>treated as smaller than every number</td>
+</tr>
+<tr class="even">
+<td>Stata</td>
+<td>false</td>
+<td><strong>true</strong></td>
+<td>treated as larger than every number</td>
+</tr>
+</tbody>
+</table>
+<p>So SAS’s <code>WHERE temp_C &lt; 170;</code> keeps the two batches with missing temperatures, and Stata’s <code>generate hot = temp_C &gt; 185</code> marks them as hot! Both are famous sources of bugs. A careful SAS or Stata programmer adds a condition like <code>AND NOT MISSING(temp_C)</code>, or <code>&amp; !missing(temp_C)</code> in Stata. When you reproduce someone’s numbers, check whether they did.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(batches<span class="sc">$</span>temp_C <span class="sc">&lt;</span> <span class="dv">170</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)            <span class="co"># R and SPSS</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 6</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(batches<span class="sc">$</span>temp_C <span class="sc">&lt;</span> <span class="dv">170</span> <span class="sc">|</span> <span class="fu">is.na</span>(batches<span class="sc">$</span>temp_C))  <span class="co"># SAS</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>2. Quantiles.</strong> There are at least nine reasonable ways to compute a quartile from a sample, and software disagrees about which to use. R’s default is type 7, SAS’s default is type 2, and SPSS uses type 6. <code>quantile()</code> can do all of them:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(batches<span class="sc">$</span>yield_pct, <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>), <span class="at">type =</span> <span class="dv">7</span>)   <span class="co"># R</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    25%    50%    75% </span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55.200 57.300 63.125</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(batches<span class="sc">$</span>yield_pct, <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>), <span class="at">type =</span> <span class="dv">2</span>)   <span class="co"># SAS</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   25%   50%   75% </span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 55.10 57.30 63.25</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The medians agree, but the quartiles differ in the first decimal place. That’s not an error, just a different definition, but it’s a puzzling difference if you don’t know about it.</p>
+<p><strong>3. Rounding.</strong> What’s 2.5, rounded to a whole number? SAS, SPSS, Stata and Excel all say 3. R says 2:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">3.5</span>))</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0 2 2 4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>R follows the international standard for floating-point arithmetic (IEC 60559), which rounds a 5 to the <em>even</em> digit. Over many numbers, that avoids a slight upward bias. It rarely matters, but it explains the odd difference in the last digit of a table.</p>
+<p><strong>4. Reference levels.</strong> In a regression with a categorical predictor, one category is the baseline, and the coefficients compare the other categories with it. R and Stata use the <em>first</em> level as the baseline, while SAS’s PROC GLM and SPSS use the <em>last</em>. The fitted model is identical, but every coefficient looks different. You’ll meet this properly in the next module, and you’ll reproduce a SAS result in the challenge round.</p>
+<p><strong>Your turn.</strong> A colleague’s SPSS output gives the quartiles of the yield. Reproduce them in R.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_quantile" data-caption="Your turn · Quantile types">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgUXVhbnRpbGUgdHlwZXMiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9xdWFudGlsZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoicXVhbnRpbGUoYmF0Y2hlcyR5aWVsZF9wY3QsIGMoMC4yNSwgMC41LCAwLjc1KSwgdHlwZSA9IF9fX19fXykifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_quantile">
+<p>SPSS uses type 6.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_quantile">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(batches<span class="sc">$</span>yield_pct, <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>), <span class="at">type =</span> <span class="dv">6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>55.0, 57.3 and 63.375, against R’s default of 55.2, 57.3 and 63.125.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_quantile" data-check="true">
+<script type="exercise-check-ex1_14_quantile-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9xdWFudGlsZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgaXNUUlVFKGFsbC5lcXVhbCh1bm5hbWUoLnJlc3VsdCksIGMoNTUsIDU3LjMsIDYzLjM3NSkpKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBTUFNTJ3MgcXVhcnRpbGVzIGFyZSA1NS4wLCA1Ny4zIGFuZCA2My4zNzUuXCIpXG59IGVsc2UgaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgaXNUUlVFKGFsbC5lcXVhbCh1bm5hbWUoLnJlc3VsdCksIGMoNTUuMiwgNTcuMywgNjMuMTI1KSkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJUaGF0J3MgUidzIGRlZmF1bHQsIHR5cGUgNy4gU1BTUyB1c2VzIHR5cGUgNi5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFNldCB0eXBlID0gNi5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="moving-data-and-results" class="level2">
+<h2 class="anchored" data-anchor-id="moving-data-and-results">Moving data and results</h2>
+<p><strong>Data.</strong> haven writes files for every one of these tools, and it keeps the variable and value labels: <code>write_sav()</code>, <code>write_dta()</code> and <code>write_xpt()</code>. But each format has its own rules, and haven stops you when you break one:</p>
+<ul>
+<li>SAS transport files, version 5 (the one regulators ask for), allow variable names of at most 8 characters. <code>write_xpt(df, "file.xpt", version = 5)</code> refuses <code>residence_min</code>, so you have to rename first.</li>
+<li>Stata names can only use letters, digits and underscores, up to 32 characters, so <code>yield.pct</code> isn’t allowed.</li>
+<li>SPSS’s user-defined missing values don’t exist in Stata. If you read a survey with <code>user_na = TRUE</code>, and write it to Stata, the 9 = “no answer” becomes an ordinary 9. Turn such codes into <code>NA</code> first, with <code>zap_missing()</code>.</li>
+</ul>
+<p>For tools beyond these three, like Python or a database, use CSV or Parquet (Lesson 9).</p>
+<p><strong>Results.</strong> When you send results to a colleague, send a table, not a screenshot. The <strong>broom</strong> package turns model output into a tidy data frame, which you can then write to CSV or Excel:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(yield_pct <span class="sc">~</span> temp_C <span class="sc">+</span> residence_min, <span class="at">data =</span> batches)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>broom<span class="sc">::</span><span class="fu">tidy</span>(fit)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 5</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   term          estimate std.error statistic      p.value</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;            &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 (Intercept)      5.08    22.2        0.229 0.820       </span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 temp_C           0.132    0.124      1.06  0.296       </span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 residence_min    0.644    0.0960     6.71  0.0000000915</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>And whenever you can, send the code too. A result that someone else can re-run, in any language, is a result that they can trust.</p>
+<p><strong>Your turn.</strong> Save the survey as a Stata file, read it back, and check that the variable label of <code>role</code> survived the trip.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_export" data-caption="Your turn · Writing a Stata file">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV3JpdGluZyBhIFN0YXRhIGZpbGUiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9leHBvcnQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6IndyaXRlX2R0YShzdXJ2ZXksIFwic3VydmV5LmR0YVwiKVxuYmFjayA8LSByZWFkX2R0YShfX19fX18pXG5hdHRyKGJhY2skcm9sZSwgXCJsYWJlbFwiKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_export">
+<p>Read the file you just wrote: <code>read_dta("survey.dta")</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_export">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_dta</span>(survey, <span class="st">"survey.dta"</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>back <span class="ot">&lt;-</span> <span class="fu">read_dta</span>(<span class="st">"survey.dta"</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">attr</span>(back<span class="sc">$</span>role, <span class="st">"label"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>“Job role”: the variable label made it through, and so did the value labels. Try <code>attr(back$role, "labels")</code> to see them.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_export" data-check="true">
+<script type="exercise-check-ex1_14_export-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9leHBvcnQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpZGVudGljYWwoLnJlc3VsdCwgXCJKb2Igcm9sZVwiKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiB0aGUgbGFiZWwgXFxcIkpvYiByb2xlXFxcIiBzdXJ2aXZlZCB0aGUgdHJpcCB0byBTdGF0YSBhbmQgYmFjay5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFJlYWQgYmFjayB0aGUgZmlsZSB5b3Ugd3JvdGUsIFxcXCJzdXJ2ZXkuZHRhXFxcIi5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · Reproduce a SAS result.</strong> A colleague ran this, and reported N = 8 and a mean yield of 55.68:</p>
+<pre class="sas"><code>PROC MEANS DATA=plant.batches N MEAN;
+  WHERE temp_C &lt; 170;
+  VAR yield_pct;
+RUN;</code></pre>
+<p>Your R version gives N = 6. Make R reproduce the SAS result exactly, so that you can explain the difference to your colleague.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_sasmissing" data-caption="Challenge · SAS and missing values">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgU0FTIGFuZCBtaXNzaW5nIHZhbHVlcyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgxXzE0X3Nhc21pc3NpbmciLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImJhdGNoZXMgfD5cbiAgZmlsdGVyKF9fX19fXykgfD5cbiAgc3VtbWFyaXNlKG4gPSBuKCksIG1lYW4gPSBtZWFuKHlpZWxkX3BjdCkpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_sasmissing">
+<p>SAS treats a missing temperature as smaller than every number, so <code>temp_C &lt; 170</code> is true for the two batches with missing temperatures.</p>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_sasmissing">
+<p><code>filter(temp_C &lt; 170 | is.na(temp_C))</code></p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_sasmissing">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>batches <span class="sc">|&gt;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(temp_C <span class="sc">&lt;</span> <span class="dv">170</span> <span class="sc">|</span> <span class="fu">is.na</span>(temp_C)) <span class="sc">|&gt;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mean =</span> <span class="fu">mean</span>(yield_pct))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>N = 8 and a mean of 55.675. The colleague’s “cool batches” include B07 and B23, whose temperatures are unknown, and B07 had one of the best yields of the campaign, 74.1%! Without the missing values, the six cool batches average 52.7%.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_sasmissing" data-check="true">
+<script type="exercise-check-ex1_14_sasmissing-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9zYXNtaXNzaW5nIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXMuZGF0YS5mcmFtZSgucmVzdWx0KSAmJiBpc1RSVUUoLnJlc3VsdCRuID09IDgpICYmIGlzVFJVRShhYnMoLnJlc3VsdCRtZWFuIC0gNTUuNjc1KSA8IDFlLTkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IE4gPSA4LCBiZWNhdXNlIFNBUyBrZXB0IHRoZSB0d28gYmF0Y2hlcyB3aXRoIG1pc3NpbmcgdGVtcGVyYXR1cmVzLlwiKVxufSBlbHNlIGlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIGlzVFJVRSgucmVzdWx0JG4gPT0gNikpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIlRoYXQncyBSJ3MgYW5zd2VyLiBJbiBTQVMsIGEgbWlzc2luZyB2YWx1ZSBpcyBsZXNzIHRoYW4gMTcwLiBBZGQgfCBpcy5uYSh0ZW1wX0MpLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVHJ5IGZpbHRlcih0ZW1wX0MgPCAxNzAgfCBpcy5uYSh0ZW1wX0MpKS5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Challenge 2 · SAS’s baseline.</strong> A SAS colleague fitted the yield on the catalyst with <code>PROC GLM; CLASS catalyst; MODEL yield_pct = catalyst / SOLUTION;</code>, which uses the <em>last</em> catalyst, D, as the baseline. Their coefficient for catalyst A is −0.49. Reproduce it in R by making D the reference level.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_reference" data-caption="Challenge · Reference levels">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgUmVmZXJlbmNlIGxldmVscyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgxXzE0X3JlZmVyZW5jZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiYmF0Y2hlcyB8PlxuICBtdXRhdGUoY2F0YWx5c3QgPSByZWxldmVsKGZhY3RvcihjYXRhbHlzdCksIHJlZiA9IF9fX19fXykpIHw+XG4gIGxtKHlpZWxkX3BjdCB+IGNhdGFseXN0LCBkYXRhID0gXykgfD5cbiAgY29lZigpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex1_14_reference">
+<p>The reference level is given as text: <code>ref = "D"</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex1_14_reference">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>batches <span class="sc">|&gt;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">catalyst =</span> <span class="fu">relevel</span>(<span class="fu">factor</span>(catalyst), <span class="at">ref =</span> <span class="st">"D"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lm</span>(yield_pct <span class="sc">~</span> catalyst, <span class="at">data =</span> _) <span class="sc">|&gt;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coef</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Catalyst A’s coefficient is −0.49: its batches averaged 0.49 percentage points less than catalyst D’s. With R’s default baseline, A, the same model says that D is 0.49 <em>more</em> than A. Same model, same fit, different point of view. (The <code>_</code> is the native pipe’s placeholder: it passes the data frame to the <code>data</code> argument.)</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex1_14_reference" data-check="true">
+<script type="exercise-check-ex1_14_reference-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4MV8xNF9yZWZlcmVuY2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5udW1lcmljKC5yZXN1bHQpICYmIFwiY2F0YWx5c3RBXCIgJWluJSBuYW1lcygucmVzdWx0KSAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbW1wiY2F0YWx5c3RBXCJdXSArIDAuNDg2NjY2NykgPCAxZS02KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiB3aXRoIEQgYXMgdGhlIGJhc2VsaW5lLCBjYXRhbHlzdCBBJ3MgY29lZmZpY2llbnQgaXMgLTAuNDksIGFzIGluIFNBUy5cIilcbn0gZWxzZSBpZiAoaXMubnVtZXJpYygucmVzdWx0KSAmJiBcImNhdGFseXN0RFwiICVpbiUgbmFtZXMoLnJlc3VsdCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIkQgaXMgc3RpbGwgYSBjb2VmZmljaWVudCwgc28gQSBpcyB0aGUgYmFzZWxpbmUuIFNldCByZWYgPSBcXFwiRFxcXCIuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2UgcmVsZXZlbChmYWN0b3IoY2F0YWx5c3QpLCByZWYgPSBcXFwiRFxcXCIpLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> In a SAS program, what does <code>RUN;</code> do?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">It ends a DATA or PROC step, so that the step runs</label></li>
+<li><label><input type="checkbox">It restarts SAS</label></li>
+<li><label><input type="checkbox">It runs the whole program from the start</label></li>
+</ul>
+<div class="explain">
+<p>SAS programs are made of steps, and each one ends with <code>RUN;</code>.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> In Stata, a batch has a missing temperature. What does <code>generate hot = temp_C &gt; 185</code> give it?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Missing</label></li>
+<li><label><input type="checkbox">0, false</label></li>
+<li><label><input type="checkbox" checked="">1, true, because Stata treats missing values as larger than every number</label></li>
+</ul>
+<div class="explain">
+<p>A classic Stata trap. Add <code>if !missing(temp_C)</code>, or the missing batches count as hot.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> Which SAS statement keeps the batches with <em>missing</em> temperatures, as well as the cool ones?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked=""><code>WHERE temp_C &lt; 170;</code></label></li>
+<li><label><input type="checkbox"><code>WHERE temp_C &gt; 185;</code></label></li>
+<li><label><input type="checkbox">Neither: SAS always drops missing values</label></li>
+</ul>
+<div class="explain">
+<p>In SAS, a missing number is smaller than every real number, so it passes any “less than” test.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> You want R’s quartiles to match SPSS’s. Which <code>quantile()</code> type do you use?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Type 7, R’s default</label></li>
+<li><label><input type="checkbox">Type 2</label></li>
+<li><label><input type="checkbox" checked="">Type 6</label></li>
+</ul>
+<div class="explain">
+<p>SPSS (and Minitab) use type 6, and SAS’s default is type 2.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> What does R’s <code>round(2.5)</code> give?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">2</label></li>
+<li><label><input type="checkbox">3</label></li>
+<li><label><input type="checkbox">2.5</label></li>
+</ul>
+<div class="explain">
+<p>R rounds a 5 to the even digit, following the IEC 60559 standard. SAS, SPSS, Stata and Excel give 3.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> SAS and R report different coefficients for the catalysts in the same regression. What’s the most likely reason?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">One of them has a bug</label></li>
+<li><label><input type="checkbox" checked="">They use different baseline categories: SAS the last, R the first</label></li>
+<li><label><input type="checkbox">SAS can’t fit regressions with categories</label></li>
+</ul>
+<div class="explain">
+<p>The fitted models are identical. Only the baseline, and so the meaning of each coefficient, differs. <code>relevel()</code> changes R’s baseline.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>That’s the last lesson of Module 1, and only the project is left! You can read your colleagues’ code now, whatever their language. Here’s what you’ve learned:</p>
+<ul>
+<li><strong>The phrasebook:</strong> SAS’s DATA steps and PROCs, SPSS’s period-terminated commands, and Stata’s do-files all map onto dplyr verbs and <code>lm()</code>.</li>
+<li><strong>Missing values:</strong> R and SPSS drop them in comparisons, SAS treats them as smaller than every number, and Stata as larger. Check for <code>NOT MISSING()</code> and <code>!missing()</code> when you reproduce results.</li>
+<li><strong>Definitions:</strong> quantiles (R type 7, SAS type 2, SPSS type 6), rounding (R rounds a 5 to the even digit), and baselines (R and Stata the first level, SAS and SPSS the last).</li>
+<li><strong>Moving data:</strong> haven’s writers keep labels. Respect each format’s naming rules, and turn user-defined missing codes into <code>NA</code> before you leave SPSS behind.</li>
+<li><strong>Sharing results:</strong> tidy tables from <code>broom::tidy()</code>, written to CSV or Excel, together with the code that made them.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><strong>The translation workbook.</strong> UCLA’s <a href="https://stats.oarc.ucla.edu/">statistical consulting pages</a> show the same analyses in SAS, SPSS, Stata and R. Pick two of their SAS or Stata examples, translate them into R yourself, and then compare your version with theirs.</li>
+<li><strong>Write for SAS.</strong> Write the batch table as a version 5 transport file. First rename every variable longer than 8 characters (for example, <code>residence_min</code> to <code>res_min</code>), and keep a small table that maps the new names to the old ones.</li>
+<li><strong>A Stata round trip.</strong> Read the survey with <code>user_na = TRUE</code>, write it with <code>write_dta()</code>, and read it back. What happened to “no answer”? Repeat with <code>zap_missing()</code> before writing.</li>
+<li><strong>Your own phrasebook.</strong> Start a one-page cheat sheet of the commands from this lesson, in all four languages. It’ll come in handy whenever a colleague sends you their code.</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>DATA step and PROC step</dt>
+<dd>
+In SAS, a step that builds a dataset, and a step that runs an analysis procedure.
+</dd>
+<dt>Syntax file</dt>
+<dd>
+A script of SPSS commands, saved as <code>.sps</code>.
+</dd>
+<dt>Do-file</dt>
+<dd>
+A script of Stata commands, saved as <code>.do</code>.
+</dd>
+<dt>Library</dt>
+<dd>
+In SAS, a named folder of datasets, like <code>plant</code> in <code>plant.batches</code>.
+</dd>
+<dt>Quantile type</dt>
+<dd>
+One of the several definitions of a sample quantile. R’s default is type 7.
+</dd>
+<dt>Reference level</dt>
+<dd>
+The category that a regression compares the others with, also called the baseline.
+</dd>
+<dt>Transport file</dt>
+<dd>
+A SAS <code>.xpt</code> file, an open format for moving SAS datasets between systems.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Robert Muenchen, <em>R for SAS and SPSS Users</em> (2nd edition, Springer, 2011), and Robert Muenchen and Joseph Hilbe, <em>R for Stata Users</em> (Springer, 2010). Side-by-side translations, for when you meet a lot of code from one tool.</li>
+<li>UCLA’s <a href="https://stats.oarc.ucla.edu/">Statistical Methods and Data Analytics</a> pages. Hundreds of worked examples, many of them in all four languages.</li>
+<li>Rick Wicklin, <a href="https://blogs.sas.com/content/iml/2017/05/24/definitions-sample-quantiles.html">“Sample quantiles: A comparison of 9 definitions”</a>, on The DO Loop blog (SAS, 2017). The quantile definitions, explained by a SAS developer.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsInJlYWRyIiwiZHBseXIiLCJoYXZlbiJdLCJyZXBvcyI6W119LCJyZW5kZXJfZGYiOiJkZWZhdWx0In0=
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL2JhdGNoZXMuY3N2IiwiZGF0YS9iYXRjaGVzLmR0YSIsImRhdGEvb3BlcmF0b3Jfc3VydmV5LnNhdiJd
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/01-data-management";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

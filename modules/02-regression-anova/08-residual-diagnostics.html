@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Use residual plots to check linearity, constant variance, normality and independence, back them up with formal tests (lack of fit, Breusch-Pagan, Bartlett, Shapiro-Wilk, Durbin-Watson), and decide what to do when an assumption fails.">
+
+<title>Checking model assumptions – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Checking model assumptions</h1>
+<p class="subtitle lead">Reading the residuals for curves, funnels, outliers and patterns in time</p>
+</div>
+
+<div>
+  <div class="description">
+    Use residual plots to check linearity, constant variance, normality and independence, back them up with formal tests (lack of fit, Breusch-Pagan, Bartlett, Shapiro-Wilk, Durbin-Watson), and decide what to do when an assumption fails.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 2 · Lesson 8 of 15</span> <span class="meta-item">Week 38 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>Every standard error, test and interval since Lesson 3 has rested on four assumptions: a <strong>L</strong>inear mean, <strong>I</strong>ndependent errors, <strong>N</strong>ormal errors and <strong>E</strong>qual variance. Until now, we took them on trust. This lesson checks them, and the evidence is in the residuals: everything the model couldn’t explain. A good model leaves residuals that look like pure, patternless noise. Any pattern you find is something the model missed, and it usually tells you what to do next.</p>
+<p>Two models are on trial today: Lesson 7’s interaction model for the process study, and Lesson 2’s calibration line, the one with <span class="math inline">R^2 = 0.9989</span>.</p>
+<div class="fizz">
+<p>Detective time! The residuals are the witnesses. They remember everything the model forgot. Let’s interview them one at a time.</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>plot residuals against the fitted values and the predictors, to check linearity</li>
+<li>spot non-constant variance, and test for it</li>
+<li>check normality with a Q-Q plot, and find the runs that don’t fit</li>
+<li>plot residuals in time order, to check independence, and measure autocorrelation</li>
+<li>test a calibration line for lack of fit, using its replicates</li>
+<li>decide what to do when an assumption fails</li>
+</ul>
+<section id="the-residuals-and-their-plots" class="level2">
+<h2 class="anchored" data-anchor-id="the-residuals-and-their-plots">The residuals and their plots</h2>
+<p>Here’s the model from last lesson, with its residuals added to the data:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(yield_pct <span class="sc">~</span> temp_C <span class="sc">*</span> catalyst <span class="sc">+</span> residence_min <span class="sc">+</span> feed_water_ppm, <span class="at">data =</span> study)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>study <span class="ot">&lt;-</span> <span class="fu">mutate</span>(study, <span class="at">fitted =</span> <span class="fu">fitted</span>(fit), <span class="at">resid =</span> <span class="fu">resid</span>(fit))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The most basic plot is the residuals against the fitted values. If the model is right, the points should form a shapeless horizontal band around zero, the same width everywhere:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(study, <span class="fu">aes</span>(<span class="at">x =</span> fitted, <span class="at">y =</span> resid)) <span class="sc">+</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.8</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Fitted yield (%)"</span>, <span class="at">y =</span> <span class="st">"Residual (points)"</span>) <span class="sc">+</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-residual-diagnostics_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The rose curve is a <strong>loess smoother</strong>, a flexible local average that follows any trend in the residuals. Here it stays close to zero. Mostly a band, then, apart from one point way up at +14 and another down at −11. Good so far, but this plot mixes all the predictors together. The next steps look at each assumption on its own.</p>
+<p>Base R draws four standard diagnostic plots with a single command, <code>plot(fit)</code>, and you’ll see them in many books. This lesson draws its own, to look at one thing at a time.</p>
+</section>
+<section id="linearity" class="level2">
+<h2 class="anchored" data-anchor-id="linearity">Linearity</h2>
+<p>A missing curve shows up best when you plot the residuals against each numerical predictor in turn:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(study, <span class="fu">aes</span>(<span class="at">x =</span> temp_C, <span class="at">y =</span> resid)) <span class="sc">+</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.8</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">158.1</span>, <span class="at">y =</span> <span class="fl">12.3</span>, <span class="at">label =</span> <span class="st">"P066"</span>, <span class="at">size =</span> <span class="fl">3.5</span>, <span class="at">color =</span> <span class="st">"grey30"</span>) <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Temperature (°C)"</span>, <span class="at">y =</span> <span class="st">"Residual (points)"</span>) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-residual-diagnostics_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Two things jump out. One run, P066, sits all alone at 158 °C, far to the left of every other run, with a huge residual (it drags the smoother up at the far left, too). And between 170 and 205 °C, the residuals form a gentle <strong>arch</strong>: below zero at both ends, above zero in the middle. That’s what a missing curve looks like. The yield rises with temperature, but more slowly at the top, and a straight line can’t bend to follow it. (You’ll add the curve in Lesson 9.)</p>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex2_08_bands&quot;,&quot;ex2_08_spread&quot;,&quot;ex2_08_shapiro&quot;,&quot;ex2_08_age&quot;,&quot;ex2_08_dw&quot;,&quot;ex2_08_lof&quot;,&quot;ex2_08_noise&quot;,&quot;ex2_08_fix&quot;]">
+<script type="exercise-setup-ex2_08_bands-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_spread-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_shapiro-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_age-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_dw-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_lof-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_noise-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+<script type="exercise-setup-ex2_08_fix-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4Ml8wOF9iYW5kcyIsImV4Ml8wOF9zcHJlYWQiLCJleDJfMDhfc2hhcGlybyIsImV4Ml8wOF9hZ2UiLCJleDJfMDhfZHciLCJleDJfMDhfbG9mIiwiZXgyXzA4X25vaXNlIiwiZXgyXzA4X2ZpeCJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubGlicmFyeShkcGx5cilcbnN0dWR5IDwtIHJlYWRfY3N2KFwiZGF0YS9wcm9jZXNzX3N0dWR5LmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuY2FsaWJyYXRpb24gPC0gcmVhZF9jc3YoXCJkYXRhL2NhbGlicmF0aW9uLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZml0IDwtIGxtKHlpZWxkX3BjdCB+IHRlbXBfQyAqIGNhdGFseXN0ICsgcmVzaWRlbmNlX21pbiArIGZlZWRfd2F0ZXJfcHBtLCBkYXRhID0gc3R1ZHkpXG5zdHVkeSA8LSBtdXRhdGUoc3R1ZHksIGZpdHRlZCA9IGZpdHRlZChmaXQpLCByZXNpZCA9IHJlc2lkKGZpdCkpXG5maXRfY2FsIDwtIGxtKGFic29yYmFuY2UgfiBjb25jX21nTCwgZGF0YSA9IGNhbGlicmF0aW9uKSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> Put a number on the arch. Split the temperatures into four bands, and compute the mean residual in each. The residuals are already in <code>study$resid</code>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_bands" data-caption="Your turn · The arch in numbers">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIGFyY2ggaW4gbnVtYmVycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgyXzA4X2JhbmRzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJzdHVkeSB8PlxuICBtdXRhdGUoYmFuZCA9IGN1dCh0ZW1wX0MsIGJyZWFrcyA9IGMoLUluZiwgMTc1LCAxODUsIDE5NSwgSW5mKSkpIHw+XG4gIGdyb3VwX2J5KGJhbmQpIHw+XG4gIHN1bW1hcmlzZShuID0gbigpLCBtZWFuX3Jlc2lkID0gbWVhbihfX19fX18pKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_bands">
+<p>Average the <code>resid</code> column.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_bands">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>study <span class="sc">|&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">band =</span> <span class="fu">cut</span>(temp_C, <span class="at">breaks =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="dv">175</span>, <span class="dv">185</span>, <span class="dv">195</span>, <span class="cn">Inf</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(band) <span class="sc">|&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">mean_resid =</span> <span class="fu">mean</span>(resid))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>−1.25 below 175 °C, +0.13 and +1.53 in the middle bands, −0.38 above 195 °C. Down, up, down: the straight line runs too high at both ends and too low in the middle. (And the lowest band’s mean includes P066’s +14, without which it would be lower still.)</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_bands" data-check="true">
+<script type="exercise-check-ex2_08_bands-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9iYW5kcyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLmRhdGEuZnJhbWUoLnJlc3VsdCkgJiYgXCJtZWFuX3Jlc2lkXCIgJWluJSBuYW1lcygucmVzdWx0KSAmJiBucm93KC5yZXN1bHQpID09IDQgJiZcbiAgICBpc1RSVUUoYWxsKGFicygucmVzdWx0JG1lYW5fcmVzaWQgLSBjKC0xLjI1LCAwLjEyNiwgMS41MywgLTAuMzc5KSkgPCAwLjAxKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogbmVnYXRpdmUgYXQgYm90aCBlbmRzLCBwb3NpdGl2ZSBpbiB0aGUgbWlkZGxlLiBBbiBhcmNoLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIG1lYW4ocmVzaWQpIGluc2lkZSBzdW1tYXJpc2UoKS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="constant-variance" class="level2">
+<h2 class="anchored" data-anchor-id="constant-variance">Constant variance</h2>
+<p>The calibration line tells the next story. Here are its residuals against concentration:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fit_cal <span class="ot">&lt;-</span> <span class="fu">lm</span>(absorbance <span class="sc">~</span> conc_mgL, <span class="at">data =</span> calibration)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>calibration <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">resid =</span> <span class="fu">resid</span>(fit_cal)) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> conc_mgL, <span class="at">y =</span> resid)) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>, <span class="at">color =</span> <span class="st">"#C2416C"</span>) <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Concentration (mg/L)"</span>, <span class="at">y =</span> <span class="st">"Residual (absorbance)"</span>) <span class="sc">+</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-residual-diagnostics_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Remember, this line has <span class="math inline">R^2 = 0.9989</span>. Its residuals show two problems at once:</p>
+<ul>
+<li><strong>Another arch</strong>, much clearer than the process study’s: negative at both ends, positive in the middle. The absorbance bends down at high concentrations, which is the detector starting to saturate. That’s why the line’s intercept missed the blanks in Lesson 2: the straight line tilts to compromise with the curve, and lifts its left end off the blanks.</li>
+<li><strong>A funnel.</strong> The triplicates at the top of the range are far more spread out than the ones at the bottom. Their scatter grows with the absorbance, as it often does for instruments. That breaks the equal-variance assumption.</li>
+</ul>
+<p>Why does unequal variance matter? Least squares gives every point the same weight, so the noisy high standards get as much say as the precise low ones. The estimates stay unbiased, but they’re less precise than they could be, and the standard errors, which assume one <span class="math inline">\sigma</span> for every point, are wrong: too narrow in some places, too wide in others. A prediction interval for a low-concentration sample would be far too wide, and one for a high-concentration sample too narrow.</p>
+<p>There are formal tests, too. The <strong>Breusch-Pagan test</strong> regresses the squared residuals on the predictors: if the spread changes with them, it finds the trend. When the data have replicates, as the calibration does, you can compare the replicates’ variances directly with <strong>Bartlett’s test</strong>: <code>bartlett.test(absorbance ~ factor(conc_mgL), data = calibration)</code> gives <span class="math inline">p = 0.036</span>.</p>
+<p><strong>Your turn.</strong> Measure the funnel. Compute the standard deviation of the three replicates at each concentration.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_spread" data-caption="Your turn · The replicates' spread">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIHJlcGxpY2F0ZXMnIHNwcmVhZCIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgyXzA4X3NwcmVhZCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiY2FsaWJyYXRpb24gfD5cbiAgZ3JvdXBfYnkoY29uY19tZ0wpIHw+XG4gIHN1bW1hcmlzZShzZCA9IF9fX19fXykifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_spread">
+<p><code>sd(absorbance)</code> within each group.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_spread">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>calibration <span class="sc">|&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(conc_mgL) <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">sd =</span> <span class="fu">sd</span>(absorbance))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>About 0.0015 for the standards from 0 to 10 mg/L, and about 0.009 for those from 30 to 50 mg/L: six times as big. These replicate standard deviations don’t depend on any model, so they show the funnel even more cleanly than the residuals do. With only three readings per standard, each one is rough, but the trend is clear.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_spread" data-check="true">
+<script type="exercise-check-ex2_08_spread-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9zcHJlYWQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIFwic2RcIiAlaW4lIG5hbWVzKC5yZXN1bHQpICYmIG5yb3coLnJlc3VsdCkgPT0gOCAmJlxuICAgIGlzVFJVRShhYnMoLnJlc3VsdCRzZFsxXSAtIDAuMDAxMjIpIDwgMWUtNCkgJiYgaXNUUlVFKGFicygucmVzdWx0JHNkWzddIC0gMC4wMTQzKSA8IDFlLTQpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IHRoZSBzcHJlYWQgZ3Jvd3MgZnJvbSBhYm91dCAwLjAwMSB0byBhYm91dCAwLjAxIGFjcm9zcyB0aGUgcmFuZ2UuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2Ugc2QoYWJzb3JiYW5jZSkgaW5zaWRlIHN1bW1hcmlzZSgpLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="normality" class="level2">
+<h2 class="anchored" data-anchor-id="normality">Normality</h2>
+<p>To check whether the residuals look normal, plot them in a <strong>normal Q-Q plot</strong> (Lesson 0.10): sorted residuals against the values you’d expect from a normal distribution. Normal residuals fall along a straight line. It’s best to use <strong>standardized residuals</strong>, which are divided by their estimated standard deviation, <span class="math inline">s\sqrt{1 - h_{ii}}</span> (Lesson 4), so that they’re all on the same scale and values beyond ±3 stand out. <code>rstandard()</code> computes them:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>study <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">std_resid =</span> <span class="fu">rstandard</span>(fit)) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">sample =</span> std_resid)) <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_qq_line</span>(<span class="at">color =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_qq</span>(<span class="at">size =</span> <span class="fl">1.8</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>) <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fu">c</span>(<span class="fl">2.15</span>, <span class="sc">-</span><span class="fl">2.15</span>), <span class="at">y =</span> <span class="fu">c</span>(<span class="fl">4.4</span>, <span class="sc">-</span><span class="fl">3.1</span>), <span class="at">label =</span> <span class="fu">c</span>(<span class="st">"P066"</span>, <span class="st">"P047"</span>), <span class="at">size =</span> <span class="fl">3.5</span>, <span class="at">color =</span> <span class="st">"grey30"</span>, <span class="at">hjust =</span> <span class="fu">c</span>(<span class="fl">1.2</span>, <span class="sc">-</span><span class="fl">0.2</span>)) <span class="sc">+</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Theoretical normal quantiles"</span>, <span class="at">y =</span> <span class="st">"Standardized residual"</span>) <span class="sc">+</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-residual-diagnostics_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The middle of the plot hugs the line nicely. But at the ends, two runs break away: P066, 4.4 standard deviations above its fitted value, and P047, 3.1 below. With 120 normal residuals, the most extreme ones would usually be around ±2.5 to ±3, so 4.4 is very unusual indeed. The <strong>Shapiro-Wilk test</strong> puts a number on it: <code>shapiro.test(resid(fit))</code> gives <span class="math inline">p = 0.030</span>.</p>
+<p>Before testing anything else, look at what these two runs <em>are</em>:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>study <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(run_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"P047"</span>, <span class="st">"P066"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(run_id, temp_C, jacket_C, residence_min, yield_pct, resid, notes)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   run_id temp_C jacket_C residence_min yield_pct resid notes                    </span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;                    </span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 P047     183.     194.          57.6      41.6 -10.6 Stirrer tripped twice, r…</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 P066     158.     196.          38.6      64.6  13.9 &lt;NA&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>P047 has an explanation in the notes: the stirrer tripped twice, so of course it underperformed. P066 has no note. But its temperature of 158.1 °C is more than nine degrees below any other run, in a study whose lowest set point was 170 °C. Its jacket, which normally runs 8 to 14 °C hotter than the reactor, was at 196.3 °C, 38 degrees hotter. Smells like a typo… Lesson 10 is about unusual points like these: how to find them systematically, how much damage they do, and what to do with them. For now, just keep them in mind.</p>
+<p>How much does normality matter? Less than the other three assumptions, for the coefficients: thanks to the central limit theorem, their sampling distributions are close to normal in large samples even when the errors aren’t. It matters more for <strong>prediction intervals</strong>, which are about single observations, and a single wild residual matters a lot, normal or not.</p>
+<p><strong>Your turn.</strong> Run the Shapiro-Wilk test on the residuals of the same model fitted without P047 and P066. Does the rest look normal?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_shapiro" data-caption="Your turn · Normal without the two?">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgTm9ybWFsIHdpdGhvdXQgdGhlIHR3bz8iLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9zaGFwaXJvIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyZXN0IDwtIGZpbHRlcihzdHVkeSwgIXJ1bl9pZCAlaW4lIGMoXCJQMDQ3XCIsIFwiX19fX19fXCIpKVxuZml0X3Jlc3QgPC0gbG0oeWllbGRfcGN0IH4gdGVtcF9DICogY2F0YWx5c3QgKyByZXNpZGVuY2VfbWluICsgZmVlZF93YXRlcl9wcG0sIGRhdGEgPSByZXN0KVxuc2hhcGlyby50ZXN0KHJlc2lkKGZpdF9yZXN0KSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_shapiro">
+<p>The other run to leave out is <code>"P066"</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_shapiro">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>rest <span class="ot">&lt;-</span> <span class="fu">filter</span>(study, <span class="sc">!</span>run_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"P047"</span>, <span class="st">"P066"</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>fit_rest <span class="ot">&lt;-</span> <span class="fu">lm</span>(yield_pct <span class="sc">~</span> temp_C <span class="sc">*</span> catalyst <span class="sc">+</span> residence_min <span class="sc">+</span> feed_water_ppm, <span class="at">data =</span> rest)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(<span class="fu">resid</span>(fit_rest))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="math inline">p = 0.85</span>: without those two runs, the residuals look perfectly normal. The “non-normality” was really two outliers. That’s common, and it’s why you should look at a Q-Q plot instead of just reading a test’s p-value.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_shapiro" data-check="true">
+<script type="exercise-check-ex2_08_shapiro-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9zaGFwaXJvIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaW5oZXJpdHMoLnJlc3VsdCwgXCJodGVzdFwiKSAmJiBpc1RSVUUoYWJzKC5yZXN1bHQkcC52YWx1ZSAtIDAuODQ4ODU0MykgPCAxZS00KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBwID0gMC44NS4gVGhlIHJlc3Qgb2YgdGhlIHJlc2lkdWFscyBsb29rIG5vcm1hbC5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIExlYXZlIG91dCBib3RoIFxcXCJQMDQ3XFxcIiBhbmQgXFxcIlAwNjZcXFwiLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="independence" class="level2">
+<h2 class="anchored" data-anchor-id="independence">Independence</h2>
+<p>The last assumption is the sneakiest: the errors shouldn’t be related to one another. The usual way to break it is <strong>time</strong>. If something drifts while the data are collected, runs close together in time share part of their error, and their residuals are correlated. That’s called <strong>autocorrelation</strong>, and the way to look for it is to plot the residuals in the order the runs were made:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>run_order <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(study))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">mutate</span>(study, <span class="at">run =</span> run_order), <span class="fu">aes</span>(<span class="at">x =</span> run, <span class="at">y =</span> resid)) <span class="sc">+</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">seq</span>(<span class="fl">20.5</span>, <span class="fl">100.5</span>, <span class="at">by =</span> <span class="dv">20</span>), <span class="at">color =</span> <span class="st">"#F4C0D1"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.8</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> y <span class="sc">~</span> x, <span class="at">span =</span> <span class="fl">0.15</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Run order"</span>, <span class="at">y =</span> <span class="st">"Residual (points)"</span>) <span class="sc">+</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">12</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="08-residual-diagnostics_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The pink lines mark the days when both reactors got a fresh catalyst charge, every 20 runs. Between them, the residuals slide downhill: high just after a change, low just before the next one. A sawtooth! The model doesn’t know that the catalyst loses activity as it ages, so the ageing ends up in the residuals, and neighbouring runs share it.</p>
+<p>Why does that matter? Correlated errors carry less information than independent ones: ten runs on one tired catalyst charge aren’t ten independent looks at the process. The model then overstates its precision, so the standard errors are too small, and the tests too confident.</p>
+<p>Two ways to measure it:</p>
+<ul>
+<li>The <strong>lag-1 autocorrelation</strong>: the correlation between each residual and the next one. Here it’s 0.23.</li>
+<li>The <strong>Durbin-Watson statistic</strong>, <span class="math inline">d = \sum_{t=2}^{n}(e_t - e_{t-1})^2 \big/ \sum_{t=1}^{n} e_t^2</span>. It’s about <span class="math inline">2(1 - r_1)</span>, where <span class="math inline">r_1</span> is the lag-1 autocorrelation, so independent residuals give about 2, and positive autocorrelation pushes it towards 0. <code>lmtest::dwtest(fit)</code> gives its p-value.</li>
+</ul>
+<p>The independence assumption depends on the order of the rows, so the residuals must be in time order, as they are here. And “time” isn’t the only way to be related: runs from the same feed lot, samples from the same batch, or measurements from the same analyst can share errors too.</p>
+<p><strong>Your turn.</strong> The sawtooth suggests a culprit: the catalyst charge’s age, which the data record as <code>catalyst_age</code> (1 to 10). Compute the mean residual for each age.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_age" data-caption="Your turn · Catching the culprit">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQ2F0Y2hpbmcgdGhlIGN1bHByaXQiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9hZ2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InN0dWR5IHw+XG4gIGdyb3VwX2J5KF9fX19fXykgfD5cbiAgc3VtbWFyaXNlKG1lYW5fcmVzaWQgPSBtZWFuKHJlc2lkKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_age">
+<p>Group by <code>catalyst_age</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_age">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>study <span class="sc">|&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(catalyst_age) <span class="sc">|&gt;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean_resid =</span> <span class="fu">mean</span>(resid))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>From +2.6 and +3.3 on a fresh charge down to −2.7 on its tenth run. Plotting residuals against a variable that’s <em>not</em> in the model is one of the best diagnostics there is: if they’re related to it, it belongs in the model.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_age" data-check="true">
+<script type="exercise-check-ex2_08_age-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9hZ2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIFwibWVhbl9yZXNpZFwiICVpbiUgbmFtZXMoLnJlc3VsdCkgJiYgbnJvdygucmVzdWx0KSA9PSAxMCAmJlxuICAgIGlzVFJVRShhYnMoLnJlc3VsdCRtZWFuX3Jlc2lkWzFdIC0gMi42MSkgPCAwLjAxKSAmJiBpc1RSVUUoYWJzKC5yZXN1bHQkbWVhbl9yZXNpZFsxMF0gLSAoLTIuNzApKSA8IDAuMDEpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IHRoZSByZXNpZHVhbHMgZmFsbCBzdGVhZGlseSBhcyB0aGUgY2F0YWx5c3QgYWdlcy5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIEdyb3VwIGJ5IGNhdGFseXN0X2FnZSwgdGhlbiBhdmVyYWdlIHJlc2lkLlwiKVxufSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> Compute the Durbin-Watson statistic by hand.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_dw" data-caption="Your turn · The Durbin-Watson statistic">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIER1cmJpbi1XYXRzb24gc3RhdGlzdGljIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDJfMDhfZHciLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImUgPC0gc3R1ZHkkcmVzaWRcbnN1bShkaWZmKGUpXjIpIC8gc3VtKF9fX19fXykifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_dw">
+<p>The denominator is the sum of the squared residuals, <code>e^2</code>. (<code>diff(e)</code> gives each residual minus the one before it.)</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_dw">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> study<span class="sc">$</span>resid</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diff</span>(e)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(e<span class="sc">^</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="math inline">d = 1.53</span>, below 2, which signals positive autocorrelation. <code>lmtest::dwtest(fit)</code> gives <span class="math inline">p = 0.004</span>: strong evidence that the errors aren’t independent.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_dw" data-check="true">
+<script type="exercise-check-ex2_08_dw-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9kdyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKGFicygucmVzdWx0IC0gMS41Mjc4MDUpIDwgMWUtNSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogZCA9IDEuNTMsIGEgc2lnbiBvZiBwb3NpdGl2ZSBhdXRvY29ycmVsYXRpb24uXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBEaXZpZGUgYnkgc3VtKGVeMikuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="lack-of-fit-a-test-with-replicates" class="level2">
+<h2 class="anchored" data-anchor-id="lack-of-fit-a-test-with-replicates">Lack of fit: a test with replicates</h2>
+<p>The calibration’s arch can be tested formally, thanks to its triplicates. The idea: the three readings at each concentration differ only by pure measurement error, since they have the same <span class="math inline">x</span>. So the scatter <em>within</em> the triplicates estimates <span class="math inline">\sigma^2</span> without using any model at all. That’s called <strong>pure error</strong>. Whatever residual variation is left beyond pure error must come from the straight line missing the averages: <strong>lack of fit</strong>.</p>
+<p>The test compares the straight line with a model that fits each concentration’s average exactly, by treating the concentration as a category. The line is nested in it (it’s the special case where the eight averages fall on a line), so <code>anova()</code> can compare them:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(fit_cal, <span class="fu">lm</span>(absorbance <span class="sc">~</span> <span class="fu">factor</span>(conc_mgL), <span class="at">data =</span> calibration))</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Analysis of Variance Table</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model 1: absorbance ~ conc_mgL</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Model 2: absorbance ~ factor(conc_mgL)</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Res.Df        RSS Df Sum of Sq     F    Pr(&gt;F)    </span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1     22 0.00266578                                 </span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2     16 0.00071282  6  0.001953 7.306 0.0006843 ***</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; ---</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The straight line’s SSE is 0.00267, and pure error accounts for only 0.00071 of it. The other 0.00195 is lack of fit: <span class="math inline">F = 7.3</span> on 6 and 16 degrees of freedom, <span class="math inline">p = 0.0007</span>. The straight line is definitely the wrong shape, <span class="math inline">R^2 = 0.9989</span> notwithstanding. Analytical chemists, take note: a high <span class="math inline">R^2</span> is not a test of linearity. This is.</p>
+<p>This test needs replicates, real repeated measurements at the same <span class="math inline">x</span>. When you design a calibration or an experiment, include a few. They give you an estimate of <span class="math inline">\sigma</span> that doesn’t trust the model.</p>
+<p><strong>Your turn.</strong> Run the lack-of-fit test.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_lof" data-caption="Your turn · The lack-of-fit test">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIGxhY2stb2YtZml0IHRlc3QiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9sb2YiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNhdHVyYXRlZCA8LSBsbShhYnNvcmJhbmNlIH4gZmFjdG9yKF9fX19fXyksIGRhdGEgPSBjYWxpYnJhdGlvbilcbmFub3ZhKGZpdF9jYWwsIHNhdHVyYXRlZCkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_lof">
+<p>Treat the concentration as a category: <code>factor(conc_mgL)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_lof">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>saturated <span class="ot">&lt;-</span> <span class="fu">lm</span>(absorbance <span class="sc">~</span> <span class="fu">factor</span>(conc_mgL), <span class="at">data =</span> calibration)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(fit_cal, saturated)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="math inline">F = 7.3</span>, <span class="math inline">p = 0.0007</span>: significant lack of fit. In Lesson 9, a curve will pass the same test.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_lof" data-check="true">
+<script type="exercise-check-ex2_08_lof-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9sb2YiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpbmhlcml0cygucmVzdWx0LCBcImFub3ZhXCIpICYmIG5yb3coLnJlc3VsdCkgPT0gMiAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbMiwgXCJGXCJdIC0gNy4zMDYpIDwgMC4wMSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogRiA9IDcuMywgcCA9IDAuMDAwNy4gVGhlIHN0cmFpZ2h0IGxpbmUgZG9lc24ndCBmaXQuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBDb21wYXJlIGZpdF9jYWwgd2l0aCBsbShhYnNvcmJhbmNlIH4gZmFjdG9yKGNvbmNfbWdMKSwgZGF0YSA9IGNhbGlicmF0aW9uKS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="when-an-assumption-fails" class="level2">
+<h2 class="anchored" data-anchor-id="when-an-assumption-fails">When an assumption fails</h2>
+<p>Finding a problem is half the job. Here’s what usually fixes each one:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Problem</th>
+<th>What you see</th>
+<th>What to try</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Curvature</td>
+<td>an arch or a trend in the residuals against a predictor</td>
+<td>add a curved term, like <span class="math inline">x^2</span>, or transform <span class="math inline">x</span> or <span class="math inline">y</span> (Lesson 9)</td>
+</tr>
+<tr class="even">
+<td>Non-constant variance</td>
+<td>a funnel</td>
+<td>transform <span class="math inline">y</span>, or use weighted least squares (Lesson 9)</td>
+</tr>
+<tr class="odd">
+<td>Outliers</td>
+<td>points far from the rest, in any plot</td>
+<td>investigate them before anything else (Lesson 10)</td>
+</tr>
+<tr class="even">
+<td>Non-normality</td>
+<td>a curved Q-Q plot</td>
+<td>often a sign of outliers or a missing variable. Otherwise, with plenty of data, it matters little for the coefficients. Transform, or use robust methods</td>
+</tr>
+<tr class="odd">
+<td>Dependence</td>
+<td>patterns in time or groups</td>
+<td>add the missing variable (here, the catalyst age), or use models for correlated data (Module 6)</td>
+</tr>
+</tbody>
+</table>
+<p>Two more pieces of advice:</p>
+<ul>
+<li><strong>Plots first, tests second.</strong> With lots of data, formal tests flag deviations too small to matter. With little data, they miss big ones. Every test in this lesson was backed by a plot.</li>
+<li><strong>Fix one thing at a time.</strong> The problems interact: P066 inflated the non-normality, and it also distorted the arch. Deal with the outliers first, then look again.</li>
+</ul>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · What does “good” look like?</strong> It’s easy to see patterns in pure noise. To calibrate your eye, compute the Durbin-Watson statistic for 120 independent random numbers.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_noise" data-caption="Challenge · Durbin-Watson for noise">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgRHVyYmluLVdhdHNvbiBmb3Igbm9pc2UiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9ub2lzZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic2V0LnNlZWQoMjAyNilcbnogPC0gcm5vcm0oMTIwKVxuX19fX19fIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_noise">
+<p>Use the same formula as before, on <code>z</code>: <code>sum(diff(z)^2) / sum(z^2)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_noise">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">120</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diff</span>(z)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(z<span class="sc">^</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>2.2, close to 2, as independent errors should give. Try a few other seeds: you’ll see values from about 1.7 to 2.3. That’s the natural wobble, and it’s why 1.53, with the p-value to back it, counts as real evidence.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_noise" data-check="true">
+<script type="exercise-check-ex2_08_noise-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9ub2lzZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKC5yZXN1bHQgPiAxLjYgJiYgLnJlc3VsdCA8IDIuNCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogYWJvdXQgMiwgYXMgaW5kZXBlbmRlbnQgZXJyb3JzIGdpdmUuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBDb21wdXRlIHN1bShkaWZmKHopXjIpIC8gc3VtKHpeMikuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Challenge 2 · Fixing the independence problem.</strong> Add <code>catalyst_age</code> to the model, and recompute the Durbin-Watson statistic. How much yield does each run of catalyst age cost?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_fix" data-caption="Challenge · Adding the catalyst age">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgQWRkaW5nIHRoZSBjYXRhbHlzdCBhZ2UiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9maXgiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImZpdF9hZ2UgPC0gbG0oeWllbGRfcGN0IH4gdGVtcF9DICogY2F0YWx5c3QgKyByZXNpZGVuY2VfbWluICsgZmVlZF93YXRlcl9wcG0gKyBfX19fX18sIGRhdGEgPSBzdHVkeSlcbmUgPC0gcmVzaWQoZml0X2FnZSlcbmMoYWdlX2NvZWYgPSB1bm5hbWUoY29lZihmaXRfYWdlKVtcImNhdGFseXN0X2FnZVwiXSksIGR3ID0gc3VtKGRpZmYoZSleMikgLyBzdW0oZV4yKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex2_08_fix">
+<p>Add <code>catalyst_age</code> to the formula.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex2_08_fix">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>fit_age <span class="ot">&lt;-</span> <span class="fu">lm</span>(yield_pct <span class="sc">~</span> temp_C <span class="sc">*</span> catalyst <span class="sc">+</span> residence_min <span class="sc">+</span> feed_water_ppm <span class="sc">+</span> catalyst_age, <span class="at">data =</span> study)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">resid</span>(fit_age)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">age_coef =</span> <span class="fu">unname</span>(<span class="fu">coef</span>(fit_age)[<span class="st">"catalyst_age"</span>]), <span class="at">dw =</span> <span class="fu">sum</span>(<span class="fu">diff</span>(e)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(e<span class="sc">^</span><span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each extra run on a charge costs 0.62 points of yield, so a charge’s tenth run makes about 5.5 points less than its first. And the Durbin-Watson statistic is back up to 1.93 (<span class="math inline">p = 0.32</span>): the dependence is gone, because it was never in the errors at all. It was a missing variable. That’s a useful question to ask of any pattern in the residuals: what’s causing it, and did you measure it? (Whether replacing the catalyst more often is worth it is now a sum the plant can do.)</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex2_08_fix" data-check="true">
+<script type="exercise-check-ex2_08_fix-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4Ml8wOF9maXgiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5udW1lcmljKC5yZXN1bHQpICYmIGxlbmd0aCgucmVzdWx0KSA9PSAyICYmIGlzVFJVRShhYnMoLnJlc3VsdFsxXSAtICgtMC42MTYwNTkpKSA8IDFlLTUpICYmIGlzVFJVRShhYnMoLnJlc3VsdFsyXSAtIDEuOTI5NDg0KSA8IDFlLTQpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IC0wLjYyIHBvaW50cyBwZXIgcnVuLCBhbmQgdGhlIER1cmJpbi1XYXRzb24gc3RhdGlzdGljIGlzIGJhY2sgdG8gMS45My5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIEFkZCBjYXRhbHlzdF9hZ2UgdG8gdGhlIG1vZGVsJ3MgZm9ybXVsYS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> The residuals against temperature form an arch: negative at both ends, positive in the middle. What does that suggest?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The errors aren’t normal</label></li>
+<li><label><input type="checkbox" checked="">The relationship is curved, and the model needs a curved term</label></li>
+<li><label><input type="checkbox">The variance isn’t constant</label></li>
+</ul>
+<div class="explain">
+<p>A systematic shape in the residuals against a predictor means the mean isn’t linear in that predictor.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> The residuals fan out as the concentration grows. Which assumption fails, and what’s the consequence?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Normality, so the coefficients are biased</label></li>
+<li><label><input type="checkbox" checked="">Equal variance, so the standard errors and prediction intervals are wrong</label></li>
+<li><label><input type="checkbox">Independence, so the residuals don’t sum to zero</label></li>
+</ul>
+<div class="explain">
+<p>Least squares stays unbiased, but it weights the noisy points as heavily as the precise ones, and its standard errors assume one <span class="math inline">\sigma</span> everywhere.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> The Shapiro-Wilk test rejects normality, but the Q-Q plot shows two wild points and a straight line for everything else. What’s the best next step?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Investigate the two points</label></li>
+<li><label><input type="checkbox">Transform the response straight away</label></li>
+<li><label><input type="checkbox">Ignore it: normality never matters</label></li>
+</ul>
+<div class="explain">
+<p>The “non-normality” here is really two outliers. Without them, the residuals passed the test easily. Find out what happened in those runs.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> The Durbin-Watson statistic is 1.53 for 120 residuals in time order. What does it suggest?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Negative autocorrelation</label></li>
+<li><label><input type="checkbox" checked="">Positive autocorrelation: neighbouring residuals tend to be alike</label></li>
+<li><label><input type="checkbox">Nothing: anything between 0 and 4 is fine</label></li>
+</ul>
+<div class="explain">
+<p>Independent errors give values close to 2, and positive autocorrelation pushes it towards 0. Here the p-value was 0.004.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> What does a lack-of-fit test need?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">At least 100 observations</label></li>
+<li><label><input type="checkbox" checked="">Replicates: repeated observations at the same <span class="math inline">x</span></label></li>
+<li><label><input type="checkbox">Normally distributed predictors</label></li>
+</ul>
+<div class="explain">
+<p>The replicates give an estimate of pure error that doesn’t depend on the model. Lack of fit is whatever the model’s residuals have beyond that.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> The calibration line has <span class="math inline">R^2 = 0.9989</span> and fails the lack-of-fit test with <span class="math inline">p = 0.0007</span>. How can both be true?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">One of them must be miscalculated</label></li>
+<li><label><input type="checkbox" checked=""><span class="math inline">R^2</span> measures how close the points are to the line, not whether the line is the right shape</label></li>
+<li><label><input type="checkbox">A high <span class="math inline">R^2</span> makes the lack-of-fit test unreliable</label></li>
+</ul>
+<div class="explain">
+<p>With very precise measurements, even a small, systematic bend is detectable, and the line is close to the points everywhere anyway.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You can now cross-examine a model’s residuals! Here’s what you’ve learned:</p>
+<ul>
+<li><strong>Residual plots</strong> are the main tool: against the fitted values, against each predictor, against variables not in the model, in a Q-Q plot, and in time order. A good model leaves a patternless band.</li>
+<li><strong>Linearity:</strong> an arch or trend against a predictor means a missing curve. Both models had one.</li>
+<li><strong>Equal variance:</strong> a funnel means the spread changes. Replicates show it directly. Breusch-Pagan and Bartlett test it.</li>
+<li><strong>Normality:</strong> check with a Q-Q plot of standardized residuals (<code>rstandard()</code>). Shapiro-Wilk tests it. Wild points matter more than mild skewness.</li>
+<li><strong>Independence:</strong> plot the residuals in time order. Durbin-Watson (<span class="math inline">\approx 2</span> when independent) and the lag-1 autocorrelation measure it. Here, a missing variable, the catalyst age, caused the dependence.</li>
+<li><strong>Lack of fit:</strong> with replicates, compare the model with one that fits each group’s mean, <code>anova(fit, lm(y ~ factor(x)))</code>. <span class="math inline">R^2</span> is not a linearity test.</li>
+<li><strong>Two suspects:</strong> P047 (a stirrer trip, in the notes) and P066 (a temperature that doesn’t match its jacket). Lesson 10 takes the case.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Download <a href="data/process_study.csv">process_study.csv</a> and <a href="data/calibration.csv">calibration.csv</a> into your project’s <code>data-raw/</code> folder, and install the lmtest package.</p>
+<ol type="1">
+<li><strong>The four standard plots.</strong> Run <code>par(mfrow = c(2, 2)); plot(fit)</code> for the process study model. Which plots show P066 and P047? What’s the “Residuals vs Leverage” plot? (Lesson 10 explains it.)</li>
+<li><strong>Formal tests.</strong> Run <code>lmtest::bptest(fit)</code>, <code>lmtest::dwtest(fit)</code> and <code>shapiro.test(resid(fit))</code>, then repeat them without P047 and P066. Which results change?</li>
+<li><strong>Residuals against everything.</strong> Plot the residuals against every column of <code>study</code> that isn’t in the model: <code>reactor</code>, <code>stir_rpm</code>, <code>ambient_C</code>, <code>operator_id</code>, <code>supplier</code>, <code>lot_id</code>. Do any of them show a pattern? (Use boxplots for the categorical ones.)</li>
+<li><strong>A lineup.</strong> Simulate four sets of residuals from a correct model (<code>rnorm(120)</code>), plot them next to the real ones in a random order, and ask a friend which plot is the real one. If they can pick it out, the pattern is real. This trick has a name: the <em>lineup protocol</em>.</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>Residual plot</dt>
+<dd>
+A plot of the residuals against the fitted values, a predictor, a variable not in the model, or the run order, used to look for patterns the model missed.
+</dd>
+<dt>Loess smoother</dt>
+<dd>
+A flexible curve, computed from local weighted averages, that follows trends in a scatterplot without assuming a shape.
+</dd>
+<dt>Standardized residual</dt>
+<dd>
+A residual divided by its estimated standard deviation, <span class="math inline">s\sqrt{1 - h_{ii}}</span>, so that all residuals are on the same scale.
+</dd>
+<dt>Heteroscedasticity</dt>
+<dd>
+Non-constant error variance. The opposite is homoscedasticity.
+</dd>
+<dt>Breusch-Pagan test</dt>
+<dd>
+A test for non-constant variance that regresses the squared residuals on the predictors.
+</dd>
+<dt>Autocorrelation</dt>
+<dd>
+Correlation between errors that are close together in time (or space).
+</dd>
+<dt>Durbin-Watson statistic</dt>
+<dd>
+<span class="math inline">d = \sum (e_t - e_{t-1})^2 / \sum e_t^2</span>, about 2 for independent errors and closer to 0 for positive autocorrelation.
+</dd>
+<dt>Pure error and lack of fit</dt>
+<dd>
+With replicates, the residual variation splits into the scatter within replicates (pure error) and the model’s failure to fit the group means (lack of fit).
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Penn State STAT 501, <a href="https://online.stat.psu.edu/stat501/Lesson04.html">Lesson 4: SLR Model Assumptions</a>. Residual plots for each assumption, with many examples. (The lack-of-fit test is in <a href="https://online.stat.psu.edu/stat501/Lesson02.html">Lesson 2</a>, sections 2.8 to 2.10.)</li>
+<li><em>NIST/SEMATECH e-Handbook of Statistical Methods</em>, <a href="https://www.itl.nist.gov/div898/handbook/pmd/section4/pmd44.htm">“How can I tell if a model fits my data?”</a>. Engineering-flavored residual analysis, including lack of fit.</li>
+<li>Hadley Wickham, Dianne Cook, Heike Hofmann and Andreas Buja, “Graphical inference for infovis”, <em>IEEE Transactions on Visualization and Computer Graphics</em> (2010). The paper behind the lineup protocol in the practice exercises.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsInJlYWRyIiwiZHBseXIiXSwicmVwb3MiOltdfSwicmVuZGVyX2RmIjoiZGVmYXVsdCJ9
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL3Byb2Nlc3Nfc3R1ZHkuY3N2IiwiZGF0YS9jYWxpYnJhdGlvbi5jc3YiXQ==
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/02-regression-anova";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

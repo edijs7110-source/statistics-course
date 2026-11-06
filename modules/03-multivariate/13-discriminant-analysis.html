@@ -1,0 +1,2740 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Build a rule that classifies new cases into known groups: find Fisher’s linear discriminants as the eigenvectors of MANOVA’s E⁻¹H, classify with posterior probabilities and see that LDA is a Mahalanobis distance rule, estimate error rates honestly with cross-validation, change the prior probabilities, and compare quadratic discriminant analysis.">
+
+<title>Linear discriminant analysis – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Linear discriminant analysis</h1>
+<p class="subtitle lead">Six drums without labels: which supplier sent them?</p>
+</div>
+
+<div>
+  <div class="description">
+    Build a rule that classifies new cases into known groups: find Fisher’s linear discriminants as the eigenvectors of MANOVA’s E⁻¹H, classify with posterior probabilities and see that LDA is a Mahalanobis distance rule, estimate error rates honestly with cross-validation, change the prior probabilities, and compare quadratic discriminant analysis.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 3 · Lesson 13 of 13</span> <span class="meta-item">Week 59 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>A forklift accident in the warehouse knocked over a pallet, and six drums of feed lost their labels. Nobody knows which supplier sent which drum. The lab sampled each one and measured the same four properties as the incoming lots of Lessons 5 to 7:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>drums</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 5</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   drum_id water_ppm aldehyde_ppm acid_mgKOH iron_ppb</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;dbl&gt;        &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 U1            206         56.1      0.1       38  </span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 U2            174         43.2      0.091     32.4</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 U3            348         54.7      0.157     36.8</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 U4            205         56.4      0.086     56  </span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5 U5            197         40.4      0.082     34.6</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6 U6            215         41.4      0.134     48.1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The 58 labeled lots of Lessons 5 to 7 show what each supplier’s feed looks like. <strong>Discriminant analysis</strong> turns them into a rule that assigns a new case to one of several known groups. It’s a classification method, like the logistic regression of Lesson 2.15 but for several groups at once, and Module 7 builds many more.</p>
+<div class="fizz">
+<p>Detective time! Four suspects, four clues, and six drums that aren’t talking.</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>find Fisher’s linear discriminants, the combinations that best separate the groups</li>
+<li>classify new cases, with posterior probabilities</li>
+<li>see that LDA is a Mahalanobis distance rule</li>
+<li>estimate how often the rule is wrong, honestly, with cross-validation</li>
+<li>change the prior probabilities, and try quadratic discriminant analysis</li>
+</ul>
+<section id="fishers-linear-discriminants" class="level2">
+<h2 class="anchored" data-anchor-id="fishers-linear-discriminants">Fisher’s linear discriminants</h2>
+<p>In 1936, R. A. Fisher asked: which linear combination <span class="math inline">\mathbf{a}^\top\mathbf{x}</span> of the variables separates the groups best? “Best” means the largest ratio of the between-group variation to the within-group variation of the combination:</p>
+<p><span class="math display">
+\frac{\mathbf{a}^\top H \mathbf{a}}{\mathbf{a}^\top E \mathbf{a}},
+</span></p>
+<p>with <span class="math inline">H</span> and <span class="math inline">E</span> the between-group and within-group SSCP matrices of one-way MANOVA (Lesson 6). The answer is the eigenvector of <span class="math inline">E^{-1}H</span> with the largest eigenvalue: the <strong>first linear discriminant</strong>. The next eigenvectors give the second and third discriminants, each the best separator among the combinations uncorrelated with the earlier ones. With <span class="math inline">k</span> groups and <span class="math inline">p</span> variables, there are <span class="math inline">\min(p, k - 1)</span> of them, here 3.</p>
+<p>So the eigenvalues that Lesson 6 turned into Wilks’ lambda, 5.50, 2.14 and 0.46, also measure how well each discriminant separates the suppliers. The first carries <span class="math inline">5.50/(5.50 + 2.14 + 0.46) = 68\%</span> of the separation.</p>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex3_13_lda&quot;,&quot;ex3_13_structure&quot;,&quot;ex3_13_predict&quot;,&quot;ex3_13_mahal&quot;,&quot;ex3_13_apparent&quot;,&quot;ex3_13_cv&quot;,&quot;ex3_13_qda&quot;,&quot;ex3_13_prior&quot;]">
+<script type="exercise-setup-ex3_13_lda-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_structure-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_predict-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_mahal-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_apparent-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_cv-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_qda-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+<script type="exercise-setup-ex3_13_prior-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4M18xM19sZGEiLCJleDNfMTNfc3RydWN0dXJlIiwiZXgzXzEzX3ByZWRpY3QiLCJleDNfMTNfbWFoYWwiLCJleDNfMTNfYXBwYXJlbnQiLCJleDNfMTNfY3YiLCJleDNfMTNfcWRhIiwiZXgzXzEzX3ByaW9yIl0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG5saWJyYXJ5KGRwbHlyKVxuZmVlZCA8LSByZWFkX2NzdihcImRhdGEvZmVlZF9sb3RzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZmVlZCRzdXBwbGllciA8LSBmYWN0b3IoZmVlZCRzdXBwbGllcilcbmRydW1zIDwtIHJlYWRfY3N2KFwiZGF0YS91bmxhYmVsZWRfZHJ1bXMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG52YXJzIDwtIGMoXCJ3YXRlcl9wcG1cIiwgXCJhbGRlaHlkZV9wcG1cIiwgXCJhY2lkX21nS09IXCIsIFwiaXJvbl9wcGJcIilcblggPC0gYXMubWF0cml4KGZlZWRbLCB2YXJzXSlcbmZpdCA8LSBNQVNTOjpsZGEoc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxubGV2cyA8LSBsZXZlbHMoZmVlZCRzdXBwbGllcilcbm1lYW5zIDwtIHQoc2FwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIGNvbE1lYW5zKFhbZmVlZCRzdXBwbGllciA9PSBzLCAsIGRyb3AgPSBGQUxTRV0pKSlcbkUgPC0gUmVkdWNlKGArYCwgbGFwcGx5KGxldnMsIGZ1bmN0aW9uKHMpIHtcbiAgWHMgPC0gWFtmZWVkJHN1cHBsaWVyID09IHMsICwgZHJvcCA9IEZBTFNFXVxuICBjcm9zc3Byb2Qoc3dlZXAoWHMsIDIsIGNvbE1lYW5zKFhzKSkpXG59KSlcblNwIDwtIEUgLyAobnJvdyhYKSAtIGxlbmd0aChsZXZzKSkifQ==
+</script>
+</div>
+<p><strong>Your turn.</strong> The setup code has loaded the 58 lots as <code>feed</code> and the six drums as <code>drums</code>. Fit the linear discriminant analysis with <code>MASS::lda()</code>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_lda" data-caption="Your turn · Fisher's discriminants">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRmlzaGVyJ3MgZGlzY3JpbWluYW50cyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgzXzEzX2xkYSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiZml0IDwtIE1BU1M6OmxkYShfX19fX18gfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkKVxuZml0In0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_lda">
+<p>The groups go on the left of the formula: <code>supplier</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_lda">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">lda</span>(supplier <span class="sc">~</span> water_ppm <span class="sc">+</span> aldehyde_ppm <span class="sc">+</span> acid_mgKOH <span class="sc">+</span> iron_ppb, <span class="at">data =</span> feed)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>fit</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The printout shows the prior probabilities (the suppliers’ shares of the 58 lots), the group means, the coefficients of the three discriminants, and the “proportion of trace”: 68%, 26% and 6% of the separation. The coefficients depend on the units, so they’re hard to read directly. The next exercise interprets the discriminants a better way.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_lda" data-check="true">
+<script type="exercise-check-ex3_13_lda-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19sZGEiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InN2IDwtIHRyeUNhdGNoKC5yZXN1bHQkc3ZkLCBlcnJvciA9IGZ1bmN0aW9uKGUpIE5VTEwpXG5pZiAoaW5oZXJpdHMoLnJlc3VsdCwgXCJsZGFcIikgJiYgbGVuZ3RoKHN2KSA9PSAzICYmIGlzVFJVRShhbGwoYWJzKHN2IC0gYyg5Ljk0OTA0OCwgNi4yMDc5ODUsIDIuODc3NDE3KSkgPCAxZS00KSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogdGhyZWUgZGlzY3JpbWluYW50cywgd2l0aCA2OCUsIDI2JSBhbmQgNiUgb2YgdGhlIHNlcGFyYXRpb24uXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBQdXQgc3VwcGxpZXIgb24gdGhlIGxlZnQgb2YgdGhlIGZvcm11bGEuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Your turn.</strong> <code>predict(fit)$x</code> holds each lot’s scores on the three discriminants. As with canonical variates in Lesson 12, correlate them with the original variables to see what each discriminant measures.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_structure" data-caption="Your turn · What do the discriminants measure?">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2hhdCBkbyB0aGUgZGlzY3JpbWluYW50cyBtZWFzdXJlPyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgzXzEzX3N0cnVjdHVyZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic2NvcmVzIDwtIHByZWRpY3QoZml0KSRfX19fX19cbnJvdW5kKGNvcihYLCBzY29yZXMpLCAyKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_structure">
+<p>The scores are in the <code>x</code> component: <code>predict(fit)$x</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_structure">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>scores <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit)<span class="sc">$</span>x</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cor</span>(X, scores), <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each discriminant is essentially one property. LD1 is the water (0.99), with the acid along for the ride (0.77): it separates Kestrel. LD2 is the aldehyde (0.99): it separates Rosewater. LD3 is the iron (−0.94): it separates Plum Valley from Fizzwell. These are the fingerprints of Lessons 6 and 7, found automatically.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_structure" data-check="true">
+<script type="exercise-check-ex3_13_structure-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19zdHJ1Y3R1cmUiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5tYXRyaXgoLnJlc3VsdCkgJiYgYWxsKGRpbSgucmVzdWx0KSA9PSBjKDQsIDMpKSAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbMSwgMV0gLSAwLjk5KSA8IDAuMDA2KSAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbNCwgM10gKyAwLjk0KSA8IDAuMDA2KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiB3YXRlciwgYWxkZWh5ZGUgYW5kIGlyb24sIG9uZSBkaXNjcmltaW5hbnQgZWFjaC5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSBwcmVkaWN0KGZpdCkkeC5cIilcbn0ifQ==
+</script>
+</div>
+<p>Here are the 58 lots and the six drums on the discriminants. The left panel shows LD1 against LD2, and the right panel LD3 against LD2:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">lda</span>(supplier <span class="sc">~</span> water_ppm <span class="sc">+</span> aldehyde_ppm <span class="sc">+</span> acid_mgKOH <span class="sc">+</span> iron_ppb, <span class="at">data =</span> feed)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>lot_scores <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">predict</span>(fit)<span class="sc">$</span>x) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">supplier =</span> feed<span class="sc">$</span>supplier)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>drum_scores <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">predict</span>(fit, <span class="at">newdata =</span> drums)<span class="sc">$</span>x) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">drum =</span> drums<span class="sc">$</span>drum_id)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>long_scores <span class="ot">&lt;-</span> <span class="cf">function</span>(d) {</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(<span class="fu">mutate</span>(d, <span class="at">panel =</span> <span class="st">"LD1 against LD2"</span>, <span class="at">horizontal =</span> LD1),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            <span class="fu">mutate</span>(d, <span class="at">panel =</span> <span class="st">"LD3 against LD2"</span>, <span class="at">horizontal =</span> LD3))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>drum_points <span class="ot">&lt;-</span> <span class="fu">long_scores</span>(drum_scores) <span class="sc">|&gt;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">hjust =</span> <span class="fu">c</span>(<span class="fl">1.4</span>, <span class="sc">-</span><span class="fl">0.4</span>, <span class="fl">1.4</span>, <span class="sc">-</span><span class="fl">0.4</span>, <span class="fl">1.4</span>, <span class="sc">-</span><span class="fl">0.4</span>,    <span class="co"># label sides in the left panel, U1 to U6,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                   <span class="sc">-</span><span class="fl">0.4</span>, <span class="fl">1.4</span>, <span class="fl">1.4</span>, <span class="sc">-</span><span class="fl">0.4</span>, <span class="sc">-</span><span class="fl">0.4</span>, <span class="sc">-</span><span class="fl">0.4</span>))  <span class="co"># and the right panel, so no labels overlap</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">long_scores</span>(lot_scores), <span class="fu">aes</span>(<span class="at">x =</span> horizontal, <span class="at">y =</span> LD2)) <span class="sc">+</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> supplier, <span class="at">shape =</span> supplier), <span class="at">size =</span> <span class="fl">2.2</span>, <span class="at">alpha =</span> <span class="fl">0.85</span>) <span class="sc">+</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> drum_points, <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">stroke =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">data =</span> drum_points, <span class="fu">aes</span>(<span class="at">label =</span> drum, <span class="at">hjust =</span> hjust), <span class="at">size =</span> <span class="fl">3.4</span>, <span class="at">fontface =</span> <span class="st">"bold"</span>) <span class="sc">+</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">Fizzwell =</span> <span class="st">"#2a78d6"</span>, <span class="at">Kestrel =</span> <span class="st">"#1baf7a"</span>, <span class="st">`</span><span class="at">Plum Valley</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#C2416C"</span>, <span class="at">Rosewater =</span> <span class="st">"#d18a12"</span>), <span class="at">name =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_shape_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">Fizzwell =</span> <span class="dv">16</span>, <span class="at">Kestrel =</span> <span class="dv">17</span>, <span class="st">`</span><span class="at">Plum Valley</span><span class="st">`</span> <span class="ot">=</span> <span class="dv">15</span>, <span class="at">Rosewater =</span> <span class="dv">18</span>), <span class="at">name =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> panel, <span class="at">scales =</span> <span class="st">"free_x"</span>) <span class="sc">+</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"LD2"</span>) <span class="sc">+</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="13-discriminant-analysis_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Scatterplots of the feed lots' discriminant scores, colored and shaped by supplier, with the six unlabeled drums as labeled black circles. On LD1, Kestrel's lots stand far to the right, with drum U3 among them. On LD2, Rosewater's lots sit at the top. On LD3, Plum Valley's lots sit to the left of Fizzwell's, with some overlap. Drum U1 sits between Rosewater, Plum Valley and Fizzwell." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Kestrel is unmistakable, and so is drum U3. Rosewater sits at the top. Fizzwell and Plum Valley overlap in the left panel and only come apart on LD3, the weakest discriminant, so they’ll be the hardest to tell apart. Drum U1 sits between three suppliers.</p>
+</section>
+<section id="classifying-the-drums" class="level2">
+<h2 class="anchored" data-anchor-id="classifying-the-drums">Classifying the drums</h2>
+<p>Classification needs a rule. Suppose each supplier’s lots are multivariate normal with a common covariance matrix <span class="math inline">\Sigma</span> (MANOVA’s assumption). Then the probability that a new case <span class="math inline">\mathbf{x}</span> came from group <span class="math inline">j</span> is its <strong>posterior probability</strong>, by Bayes’ theorem:</p>
+<p><span class="math display">
+P(\text{group } j \mid \mathbf{x}) = \frac{\pi_j f_j(\mathbf{x})}{\sum_i \pi_i f_i(\mathbf{x})},
+</span></p>
+<p>where <span class="math inline">f_j</span> is group <span class="math inline">j</span>’s normal density and <span class="math inline">\pi_j</span> its <strong>prior probability</strong>, how common the group is before you look at <span class="math inline">\mathbf{x}</span>. The rule assigns <span class="math inline">\mathbf{x}</span> to the group with the largest posterior probability. Because the groups share <span class="math inline">\Sigma</span>, the boundaries between the groups are straight lines (planes, in four dimensions): that’s why it’s called <em>linear</em>. By default, <code>lda()</code> uses the groups’ shares of the training data as the priors.</p>
+<p><strong>Your turn.</strong> Classify the six drums, and look at the posterior probabilities.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_predict" data-caption="Your turn · Which supplier sent each drum?">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2hpY2ggc3VwcGxpZXIgc2VudCBlYWNoIGRydW0/IiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDNfMTNfcHJlZGljdCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoicHJlZCA8LSBwcmVkaWN0KGZpdCwgbmV3ZGF0YSA9IF9fX19fXylcbmRhdGEuZnJhbWUoZHJ1bSA9IGRydW1zJGRydW1faWQsIHN1cHBsaWVyID0gcHJlZCRjbGFzcywgcm91bmQocHJlZCRwb3N0ZXJpb3IsIDMpKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_predict">
+<p>Predict for the <code>drums</code> data frame.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_predict">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, <span class="at">newdata =</span> drums)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">drum =</span> drums<span class="sc">$</span>drum_id, <span class="at">supplier =</span> pred<span class="sc">$</span>class, <span class="fu">round</span>(pred<span class="sc">$</span>posterior, <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Five clear verdicts: U2 and U5 are Fizzwell’s (posteriors 0.86 and 0.88), U3 is Kestrel’s (1.00), and U4 and U6 are Plum Valley’s (0.90 and 0.96). U1 is assigned to Plum Valley, but with a posterior of only 0.49, against 0.34 for Rosewater and 0.17 for Fizzwell. The rule is guessing. The honest report says so: “U1 is probably Plum Valley’s or Rosewater’s: test it further before using it.”</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_predict" data-check="true">
+<script type="exercise-check-ex3_13_predict-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19wcmVkaWN0IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJjbCA8LSB0cnlDYXRjaChhcy5jaGFyYWN0ZXIoLnJlc3VsdCRzdXBwbGllciksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChpcy5kYXRhLmZyYW1lKC5yZXN1bHQpICYmIGlkZW50aWNhbChjbCwgYyhcIlBsdW0gVmFsbGV5XCIsIFwiRml6endlbGxcIiwgXCJLZXN0cmVsXCIsIFwiUGx1bSBWYWxsZXlcIiwgXCJGaXp6d2VsbFwiLCBcIlBsdW0gVmFsbGV5XCIpKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBmaXZlIGNsZWFyIHZlcmRpY3RzLCBhbmQgYW4gdW5jZXJ0YWluIFUxLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIG5ld2RhdGEgPSBkcnVtcy5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="lda-is-a-distance-rule" class="level2">
+<h2 class="anchored" data-anchor-id="lda-is-a-distance-rule">LDA is a distance rule</h2>
+<p>There’s a simpler way to see the rule. Take logs of <span class="math inline">\pi_j f_j(\mathbf{x})</span>, drop what’s the same for every group, and you’re left with</p>
+<p><span class="math display">
+-\tfrac12 D_j^2(\mathbf{x}) + \ln \pi_j, \qquad D_j^2(\mathbf{x}) = (\mathbf{x} - \bar{\mathbf{x}}_j)^\top S_p^{-1} (\mathbf{x} - \bar{\mathbf{x}}_j),
+</span></p>
+<p>where <span class="math inline">D_j^2</span> is the squared Mahalanobis distance of Lesson 2 from <span class="math inline">\mathbf{x}</span> to group <span class="math inline">j</span>’s mean, measured with the pooled covariance matrix <span class="math inline">S_p</span>. So with equal priors, LDA assigns each case to the <strong>nearest group mean, in Mahalanobis distance</strong>. Unequal priors just give the more common groups a small head start.</p>
+<p><strong>Your turn.</strong> The setup code has stored the suppliers’ mean vectors as the rows of <code>means</code>, and the pooled covariance matrix as <code>Sp</code>. Compute each drum’s squared distance to each supplier.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_mahal" data-caption="Your turn · Distances to the four suppliers">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRGlzdGFuY2VzIHRvIHRoZSBmb3VyIHN1cHBsaWVycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgzXzEzX21haGFsIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJEMiA8LSBzYXBwbHkobGV2cywgZnVuY3Rpb24ocykgbWFoYWxhbm9iaXMoYXMubWF0cml4KGRydW1zWywgdmFyc10pLCBtZWFuc1tzLCBdLCBfX19fX18pKVxucm93bmFtZXMoRDIpIDwtIGRydW1zJGRydW1faWRcbnJvdW5kKEQyLCAxKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_mahal">
+<p>Measure the distances with the pooled covariance matrix, <code>Sp</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_mahal">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>D2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(levs, <span class="cf">function</span>(s) <span class="fu">mahalanobis</span>(<span class="fu">as.matrix</span>(drums[, vars]), means[s, ], Sp))</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(D2) <span class="ot">&lt;-</span> drums<span class="sc">$</span>drum_id</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(D2, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each drum’s smallest distance picks the same supplier as <code>lda()</code> did. For U1, the distances to Plum Valley (3.2), Rosewater (3.9) and Fizzwell (5.6) are all small: U1 would be an ordinary lot from any of the three. That’s why its posterior probabilities are so evenly split. U3, at a distance of 8.4 from Kestrel, is a slightly unusual Kestrel lot, but it’s 59 or more from everyone else.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_mahal" data-check="true">
+<script type="exercise-check-ex3_13_mahal-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19tYWhhbCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm1hdHJpeCgucmVzdWx0KSAmJiBhbGwoZGltKC5yZXN1bHQpID09IGMoNiwgNCkpICYmIGlzVFJVRShhYnMoLnJlc3VsdFsxLCBcIlBsdW0gVmFsbGV5XCJdIC0gMy4yKSA8IDAuMDYpICYmIGlzVFJVRShhYnMoLnJlc3VsdFszLCBcIktlc3RyZWxcIl0gLSA4LjQpIDwgMC4wNikpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogVTEgaXMgY2xvc2UgdG8gdGhyZWUgc3VwcGxpZXJzIGF0IG9uY2UuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2UgU3AgYXMgdGhlIGNvdmFyaWFuY2UgbWF0cml4LlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="how-often-is-the-rule-wrong" class="level2">
+<h2 class="anchored" data-anchor-id="how-often-is-the-rule-wrong">How often is the rule wrong?</h2>
+<p>Before trusting the rule, estimate its <strong>error rate</strong>. The obvious way is to classify the 58 training lots and count the mistakes. That’s the <strong>apparent error rate</strong>, and it’s optimistic: the rule was fitted to those very lots, so it does better on them than it will on new ones.</p>
+<p>The honest way is <strong>cross-validation</strong>, as in Lesson 2.12: classify each lot with a rule fitted to the <em>other</em> 57. With <code>CV = TRUE</code>, <code>lda()</code> does exactly that (leave-one-out cross-validation), and returns each lot’s cross-validated class.</p>
+<p><strong>Your turn.</strong> Compute the apparent error rate and the confusion table, which crosses the true suppliers with the predicted ones.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_apparent" data-caption="Your turn · The apparent error rate">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIGFwcGFyZW50IGVycm9yIHJhdGUiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19hcHBhcmVudCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoicHJlZGljdGVkIDwtIHByZWRpY3QoZml0KSRjbGFzc1xucHJpbnQodGFibGUodHJ1ZSA9IGZlZWQkc3VwcGxpZXIsIHByZWRpY3RlZCA9IHByZWRpY3RlZCkpXG5tZWFuKHByZWRpY3RlZCAhPSBmZWVkJF9fX19fXykifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_apparent">
+<p>Compare the predictions with the true suppliers, <code>feed$supplier</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_apparent">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>predicted <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit)<span class="sc">$</span>class</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(<span class="at">true =</span> feed<span class="sc">$</span>supplier, <span class="at">predicted =</span> predicted))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(predicted <span class="sc">!=</span> feed<span class="sc">$</span>supplier)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>6 of the 58 lots are misclassified, an apparent error rate of 10%. Every Kestrel and Rosewater lot is right. The mistakes are mostly between the twins: four Plum Valley lots called Fizzwell’s, and one the other way round. The sixth is a Fizzwell lot called Rosewater’s.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_apparent" data-check="true">
+<script type="exercise-check-ex3_13_apparent-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19hcHBhcmVudCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKGFicygucmVzdWx0IC0gNiAvIDU4KSA8IDFlLTYpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IDYgb2YgNTggd3JvbmcsIGFuIGFwcGFyZW50IGVycm9yIHJhdGUgb2YgMTAlLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gQ29tcGFyZSB3aXRoIGZlZWQkc3VwcGxpZXIuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Your turn.</strong> Now the honest estimate: the leave-one-out cross-validated error rate.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_cv" data-caption="Your turn · The cross-validated error rate">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIGNyb3NzLXZhbGlkYXRlZCBlcnJvciByYXRlIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDNfMTNfY3YiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImN2IDwtIE1BU1M6OmxkYShzdXBwbGllciB+IHdhdGVyX3BwbSArIGFsZGVoeWRlX3BwbSArIGFjaWRfbWdLT0ggKyBpcm9uX3BwYiwgZGF0YSA9IGZlZWQsIENWID0gX19fX19fKVxubWVhbihjdiRjbGFzcyAhPSBmZWVkJHN1cHBsaWVyKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_cv">
+<p>Set <code>CV = TRUE</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_cv">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">lda</span>(supplier <span class="sc">~</span> water_ppm <span class="sc">+</span> aldehyde_ppm <span class="sc">+</span> acid_mgKOH <span class="sc">+</span> iron_ppb, <span class="at">data =</span> feed, <span class="at">CV =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(cv<span class="sc">$</span>class <span class="sc">!=</span> feed<span class="sc">$</span>supplier)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>8 of the 58 lots are misclassified, 14%. On new drums, expect the rule to be wrong about one time in seven, mostly when a drum comes from Fizzwell or Plum Valley. The apparent rate, 10%, was a little optimistic, as expected.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_cv" data-check="true">
+<script type="exercise-check-ex3_13_cv-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19jdiIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKGFicygucmVzdWx0IC0gOCAvIDU4KSA8IDFlLTYpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IDggb2YgNTggd3JvbmcsIGEgY3Jvc3MtdmFsaWRhdGVkIGVycm9yIHJhdGUgb2YgMTQlLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gU2V0IENWID0gVFJVRS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="quadratic-discriminant-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="quadratic-discriminant-analysis">Quadratic discriminant analysis</h2>
+<p>LDA assumes that the groups share a covariance matrix. Lesson 6’s Box’s M test said they don’t: Kestrel’s water varies about twice as much as anyone else’s. <strong>Quadratic discriminant analysis</strong> (QDA) drops the assumption. Each group keeps its own covariance matrix <span class="math inline">S_j</span>, so the distance to group <span class="math inline">j</span> is measured with <span class="math inline">S_j</span>, and the rule adds a term for the size of <span class="math inline">S_j</span>:</p>
+<p><span class="math display">
+-\tfrac12 \ln\det S_j - \tfrac12 (\mathbf{x} - \bar{\mathbf{x}}_j)^\top S_j^{-1} (\mathbf{x} - \bar{\mathbf{x}}_j) + \ln \pi_j .
+</span></p>
+<p>The boundaries between the groups become curved (quadratic). That’s more flexible, but it costs something. QDA estimates four separate covariance matrices, 40 parameters in all, from 13 to 16 lots per supplier, against 10 parameters for LDA’s single pooled matrix. With small groups, that extra noise can outweigh the better fit.</p>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · QDA.</strong> Compute QDA’s cross-validated error rate, and compare it with LDA’s 14%.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_qda" data-caption="Challenge · Is QDA better?">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgSXMgUURBIGJldHRlcj8iLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19xZGEiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InFjdiA8LSBNQVNTOjpfX19fX18oc3VwcGxpZXIgfiB3YXRlcl9wcG0gKyBhbGRlaHlkZV9wcG0gKyBhY2lkX21nS09IICsgaXJvbl9wcGIsIGRhdGEgPSBmZWVkLCBDViA9IFRSVUUpXG5tZWFuKHFjdiRjbGFzcyAhPSBmZWVkJHN1cHBsaWVyKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_qda">
+<p>The function is <code>MASS::qda()</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_qda">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>qcv <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">qda</span>(supplier <span class="sc">~</span> water_ppm <span class="sc">+</span> aldehyde_ppm <span class="sc">+</span> acid_mgKOH <span class="sc">+</span> iron_ppb, <span class="at">data =</span> feed, <span class="at">CV =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(qcv<span class="sc">$</span>class <span class="sc">!=</span> feed<span class="sc">$</span>supplier)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>21%: 12 of the 58 lots, worse than LDA’s 8. Its apparent error rate is better than LDA’s (9% against 10%), but that’s the extra flexibility fitting noise. With these small groups, the simpler rule generalizes better, even though its assumption is a little wrong. QDA would earn its keep with larger groups, or with covariance matrices that differ much more.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_qda" data-check="true">
+<script type="exercise-check-ex3_13_qda-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19xZGEiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5udW1lcmljKC5yZXN1bHQpICYmIGxlbmd0aCgucmVzdWx0KSA9PSAxICYmIGlzVFJVRShhYnMoLnJlc3VsdCAtIDEyIC8gNTgpIDwgMWUtNikpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogMjElLCB3b3JzZSB0aGFuIExEQSdzIDE0JS5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSBNQVNTOjpxZGEoKS5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Challenge 2 · Better priors.</strong> The warehouse manager remembers that the pallet was half Rosewater’s drums, with the rest from the other three suppliers. Use priors of 1/2 for Rosewater and 1/6 for each of the others (in the order Fizzwell, Kestrel, Plum Valley, Rosewater), and classify the drums again.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_prior" data-caption="Challenge · Changing the priors">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgQ2hhbmdpbmcgdGhlIHByaW9ycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXgzXzEzX3ByaW9yIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJwcmVkMiA8LSBwcmVkaWN0KGZpdCwgbmV3ZGF0YSA9IGRydW1zLCBwcmlvciA9IGMoMS82LCAxLzYsIDEvNiwgX19fX19fKSlcbmRhdGEuZnJhbWUoZHJ1bSA9IGRydW1zJGRydW1faWQsIHN1cHBsaWVyID0gcHJlZDIkY2xhc3MsIHJvdW5kKHByZWQyJHBvc3RlcmlvciwgMykpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex3_13_prior">
+<p>Rosewater’s prior is <code>1/2</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex3_13_prior">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pred2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, <span class="at">newdata =</span> drums, <span class="at">prior =</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">6</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">drum =</span> drums<span class="sc">$</span>drum_id, <span class="at">supplier =</span> pred2<span class="sc">$</span>class, <span class="fu">round</span>(pred2<span class="sc">$</span>posterior, <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>U1 switches to Rosewater, with a posterior of 0.63. The other five verdicts don’t change, though U4’s posterior for Rosewater rises to 0.26. The data hardly distinguished Rosewater from Plum Valley for U1, so the prior information tipped the balance. For the clear-cut drums, the data overwhelm any reasonable prior.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex3_13_prior" data-check="true">
+<script type="exercise-check-ex3_13_prior-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4M18xM19wcmlvciIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiY2wgPC0gdHJ5Q2F0Y2goYXMuY2hhcmFjdGVyKC5yZXN1bHQkc3VwcGxpZXIpLCBlcnJvciA9IGZ1bmN0aW9uKGUpIE5VTEwpXG5pZiAoaXMuZGF0YS5mcmFtZSgucmVzdWx0KSAmJiBpZGVudGljYWwoY2wsIGMoXCJSb3Nld2F0ZXJcIiwgXCJGaXp6d2VsbFwiLCBcIktlc3RyZWxcIiwgXCJQbHVtIFZhbGxleVwiLCBcIkZpenp3ZWxsXCIsIFwiUGx1bSBWYWxsZXlcIikpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IFUxIHN3aXRjaGVzIHRvIFJvc2V3YXRlciwgYW5kIHRoZSBvdGhlcnMgc3RheS5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFJvc2V3YXRlcidzIHByaW9yIGlzIDEvMi5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Postscript.</strong> The delivery notes turned up a week later. U2 and U5 were Fizzwell’s, U3 Kestrel’s, U4 and U6 Plum Valley’s, and U1 was Rosewater’s. The LDA rule with the default priors got five of the six drums right, and the one it got wrong was exactly the one whose posterior probabilities said “not sure”.</p>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> How many linear discriminants are there with 4 groups and 4 variables?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">4</label></li>
+<li><label><input type="checkbox" checked="">3</label></li>
+<li><label><input type="checkbox">16</label></li>
+</ul>
+<div class="explain">
+<p>There are <span class="math inline">\min(p, k - 1) = \min(4, 3) = 3</span>.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> Where do Fisher’s discriminants come from?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The eigenvectors of the total covariance matrix</label></li>
+<li><label><input type="checkbox" checked="">The eigenvectors of <span class="math inline">E^{-1}H</span>, the same matrix as in one-way MANOVA</label></li>
+<li><label><input type="checkbox">The group means</label></li>
+</ul>
+<div class="explain">
+<p>Each discriminant maximizes the ratio of between-group to within-group variation, <span class="math inline">\mathbf{a}^\top H\mathbf{a}/\mathbf{a}^\top E\mathbf{a}</span>.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> With equal priors, which group does LDA assign a case to?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The group with the most training cases</label></li>
+<li><label><input type="checkbox" checked="">The group whose mean is nearest in Mahalanobis distance, with the pooled covariance matrix</label></li>
+<li><label><input type="checkbox">The group whose mean is nearest in Euclidean distance</label></li>
+</ul>
+<div class="explain">
+<p>That’s why LDA works with the variables’ correlations and units, like Lesson 2’s distances.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> Why is the apparent error rate optimistic?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Because it ignores the priors</label></li>
+<li><label><input type="checkbox" checked="">Because the rule is tested on the same cases it was fitted to</label></li>
+<li><label><input type="checkbox">Because it uses too few cases</label></li>
+</ul>
+<div class="explain">
+<p>Cross-validation tests each case with a rule fitted without it.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> QDA has a better apparent error rate but a worse cross-validated error rate than LDA. What does that suggest?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">QDA is always worse</label></li>
+<li><label><input type="checkbox" checked="">QDA’s extra flexibility is fitting noise: with small groups, the separate covariance matrices are poorly estimated</label></li>
+<li><label><input type="checkbox">The cross-validation is wrong</label></li>
+</ul>
+<div class="explain">
+<p>More parameters fit the training data better, but can predict new data worse.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> A drum’s posterior probabilities are 0.49, 0.34 and 0.17 for three suppliers. What should you report?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">It’s from the first supplier</label></li>
+<li><label><input type="checkbox" checked="">It’s uncertain: probably the first or the second supplier, and it needs a further test</label></li>
+<li><label><input type="checkbox">The rule has failed and should be discarded</label></li>
+</ul>
+<div class="explain">
+<p>Posterior probabilities tell you how sure the rule is, not just what it guesses.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You can now classify new cases into known groups! Here’s what you’ve learned:</p>
+<ul>
+<li><strong>Fisher’s linear discriminants</strong> are the eigenvectors of <span class="math inline">E^{-1}H</span>: the combinations that best separate the groups. Here, each one is essentially one property: water, aldehyde, iron.</li>
+<li><strong>The classification rule</strong> assigns a case to the group with the largest posterior probability. With a common covariance matrix, that’s the nearest group mean in Mahalanobis distance, adjusted for the priors.</li>
+<li><strong>Posterior probabilities</strong> say how sure the rule is. U1’s split posteriors flagged the one drum the rule got wrong.</li>
+<li><strong>Error rates:</strong> the apparent rate (10%) is optimistic, and leave-one-out cross-validation (14%) is honest.</li>
+<li><strong>Priors</strong> matter when the data can’t decide. Half-Rosewater priors switched U1 to Rosewater.</li>
+<li><strong>QDA</strong> gives each group its own covariance matrix. With small groups, it can do worse than LDA, as here (21%).</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Download <a href="data/feed_lots.csv">feed_lots.csv</a> and <a href="data/unlabeled_drums.csv">unlabeled_drums.csv</a> into your project’s <code>data-raw/</code> folder.</p>
+<ol type="1">
+<li><strong>Fewer variables.</strong> Refit the LDA with only the water and the aldehyde. What happens to the cross-validated error rate, and which suppliers get confused? Which property would you add first?</li>
+<li><strong>Plot the boundaries.</strong> With two variables, LDA’s boundaries are straight lines. Make a fine grid of water and aldehyde values with <code>expand.grid()</code>, classify each grid point, and draw the regions with <code>geom_tile()</code>. Try the same with QDA, and see the curves.</li>
+<li><strong>Costs.</strong> Sending a Kestrel drum into production unnoticed is expensive, because its water ruins a batch. How would you change the rule to make that mistake rarer? (Hint: what do the priors do?)</li>
+<li><strong>A canonical view.</strong> <code>candisc::candisc(lm(cbind(water_ppm, aldehyde_ppm, acid_mgKOH, iron_ppb) ~ supplier, data = feed))</code> gives canonical discriminant analysis, which is the same as LDA’s discriminants with MANOVA’s tests attached. Compare its canonical correlations with the square roots of <span class="math inline">\lambda/(1 + \lambda)</span> for Lesson 6’s eigenvalues.</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>Discriminant analysis</dt>
+<dd>
+A method that builds a rule to assign new cases to one of several known groups.
+</dd>
+<dt>Linear discriminant</dt>
+<dd>
+A linear combination of the variables that best separates the groups, an eigenvector of <span class="math inline">E^{-1}H</span>.
+</dd>
+<dt>Prior probability</dt>
+<dd>
+A group’s probability before the case’s measurements are seen, such as its share of all cases.
+</dd>
+<dt>Posterior probability</dt>
+<dd>
+A group’s probability after the measurements are seen, by Bayes’ theorem.
+</dd>
+<dt>Apparent error rate</dt>
+<dd>
+The share of the training cases that the rule misclassifies. It’s optimistic.
+</dd>
+<dt>Cross-validated error rate</dt>
+<dd>
+The share of cases misclassified by rules fitted without them, an honest estimate of the error on new cases.
+</dd>
+<dt>Quadratic discriminant analysis</dt>
+<dd>
+Discriminant analysis with a separate covariance matrix for each group, giving curved boundaries.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Penn State STAT 505, <a href="https://online.stat.psu.edu/stat505/Lesson10.html">Lesson 10: Discriminant Analysis</a>. Linear and quadratic discriminant analysis, error rates and an example, with sections 10.3 to 10.5 on this lesson’s topics.</li>
+<li>Gareth James and others, <a href="https://www.statlearning.com/"><em>An Introduction to Statistical Learning</em></a>, chapter 4, “Classification”. LDA and QDA alongside logistic regression, with R labs. A preview of Module 7.</li>
+<li>Johnson and Wichern, <em>Applied Multivariate Statistical Analysis</em>, chapter 11, “Discrimination and classification”. The rules, the costs and priors, and Fisher’s method, in depth.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsInJlYWRyIiwiZHBseXIiLCJNQVNTIl0sInJlcG9zIjpbXX0sInJlbmRlcl9kZiI6ImRlZmF1bHQifQ==
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL2ZlZWRfbG90cy5jc3YiLCJkYXRhL3VubGFiZWxlZF9kcnVtcy5jc3YiXQ==
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/03-multivariate";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -1,0 +1,184 @@
+---
+title: "R3 commissioning: how should we run the new reactor?"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 2 project template.
+  Save this file in the top folder of your plant-study project, as r3-analysis.qmd.
+  It expects the handover files, untouched, in data-raw/r3/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the reader is Dana,
+  an engineer, not a statistician. Write the text for her.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+theme_set(theme_minimal(base_size = 12))
+
+r3_raw <- read_csv("data-raw/r3/r3_runs.csv", show_col_types = FALSE)
+```
+
+## Summary for Dana
+
+<!-- Write this section last, in plain words, in five or six sentences:
+     the recommended settings, the yield to expect (for the average batch, and for a
+     single batch), whether catalyst B is worth it, and the main caveats. -->
+
+- **Recommended settings:** ... °C, ... minutes, ... rpm, catalyst ...
+- **Expected yield:** ...
+- **Catalyst B:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many runs, over what ranges? What do the notes say? -->
+
+```{r}
+#| label: look
+glimpse(r3_raw)
+summary(r3_raw)
+r3_raw |> filter(!is.na(notes)) |> select(run_id, yield_pct, purity_pct, notes)
+```
+
+```{r}
+#| label: scatterplots
+#| fig-height: 6
+r3_raw |>
+  select(run_id, yield_pct, temp_C, residence_min, stir_rpm, feed_water_ppm) |>
+  pivot_longer(-c(run_id, yield_pct), names_to = "predictor", values_to = "value") |>
+  ggplot(aes(x = value, y = yield_pct)) +
+  geom_point(alpha = 0.7) +
+  facet_wrap(~ predictor, scales = "free_x") +
+  labs(x = NULL, y = "Yield (%)")
+```
+
+## 2. Checking the records
+
+<!-- Dana typed the run sheets by hand and hasn't checked them. Which runs look wrong,
+     and why? Which runs aren't examples of normal operation? Decide what to do with each,
+     and record it in the cleaning log at the end. -->
+
+```{r}
+#| label: clean
+r3 <- r3_raw
+# Your decisions, for example:
+# r3 <- r3 |> filter(run_id != "...")    # reason: ...
+```
+
+## 3. A model for the yield
+
+<!-- Start from the chemistry: which terms should be there, and in what form?
+     (Curvature? Interactions? Does stirring matter at this scale?)
+     Then check the model and improve it. Center the temperature. -->
+
+```{r}
+#| label: yield-model
+fit_yield <- lm(yield_pct ~ temp_C + residence_min + stir_rpm + catalyst + feed_water_ppm, data = r3)
+summary(fit_yield)
+```
+
+### Diagnostics
+
+<!-- Residuals against the fitted values and against every predictor, a Q-Q plot,
+     residuals in run order, leverage and Cook's distance, VIFs.
+     What do they tell you, and what did you change because of them? -->
+
+```{r}
+#| label: diagnostics
+#| fig-height: 6
+r3_check <- r3 |> mutate(resid = resid(fit_yield), fitted = fitted(fit_yield))
+r3_check |>
+  select(run_id, resid, fitted, temp_C, residence_min, stir_rpm, feed_water_ppm) |>
+  pivot_longer(-c(run_id, resid), names_to = "against", values_to = "value") |>
+  ggplot(aes(x = value, y = resid)) +
+  geom_hline(yintercept = 0, color = "grey60") +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "loess", formula = y ~ x, se = FALSE) +
+  facet_wrap(~ against, scales = "free_x") +
+  labs(x = NULL, y = "Residual")
+```
+
+### Comparing candidate models
+
+```{r}
+#| label: compare
+#| eval: false
+fit_a <- lm(yield_pct ~ ..., data = r3)
+fit_b <- lm(yield_pct ~ ..., data = r3)
+anova(fit_a, fit_b)
+AIC(fit_a, fit_b)
+```
+
+## 4. A model for the purity
+
+<!-- The customer's limit is 98.5%. Which conditions lower the purity? -->
+
+```{r}
+#| label: purity-model
+#| eval: false
+fit_purity <- lm(purity_pct ~ ..., data = r3)
+summary(fit_purity)
+```
+
+## 5. Choosing the operating conditions
+
+<!-- Search a grid of settings inside the range of the data. Keep only the settings where
+     the purity is safely above 98.5% (for example, where the lower end of the purity's
+     95% prediction interval is at least 98.5), and find the highest predicted yield. -->
+
+```{r}
+#| label: grid-search
+#| eval: false
+grid <- expand_grid(temp_C = seq(175, 200, by = 0.5),
+                    residence_min = seq(30, 75, by = 1),
+                    stir_rpm = ...,
+                    catalyst = c("A", "B"),
+                    feed_water_ppm = 205)
+grid$yield <- predict(fit_yield, newdata = grid)
+purity_pi <- predict(fit_purity, newdata = grid, interval = "prediction")
+grid$purity_low <- purity_pi[, "lwr"]
+grid |> filter(purity_low >= 98.5) |> slice_max(yield, n = 5)
+```
+
+## 6. How sure are we?
+
+<!-- At the recommended settings: a confidence interval for the average batch's yield,
+     and a prediction interval for a single batch. Which one is "the yield we can promise"?
+     Catalyst B: is its advantage at least 2 points? Show the interval, and test it. -->
+
+```{r}
+#| label: uncertainty
+#| eval: false
+best <- tibble(temp_C = ..., residence_min = ..., stir_rpm = ..., catalyst = "B", feed_water_ppm = 205)
+predict(fit_yield, newdata = best, interval = "confidence")
+predict(fit_yield, newdata = best, interval = "prediction")
+confint(fit_yield)
+```
+
+## 7. Limitations and next steps
+
+<!-- What can't these data tell you? Where would you extrapolate? What would you like the
+     plant to try next, and why? -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~run,     ~decision,                 ~reason,
+  "Example", "Excluded from the model", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

@@ -1,0 +1,203 @@
+---
+title: "Corrosion in the cooling-water network: which locations need action?"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 5 project template.
+  Save this file in the top folder of your plant-study project, as corrosion-study.qmd.
+  It expects the handover files, untouched, in data-raw/corrosion/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the reader is Ines, the water
+  treatment engineer. Write the text for her.
+  Packages: tidyverse, and brms with Stan for the models (Lesson 9's practice section says how to
+  install Stan). Fitting each model takes a minute or so, mostly compiling.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+theme_set(theme_minimal(base_size = 12))
+
+coupons_raw <- read_csv("data-raw/corrosion/coupons_2026.csv", show_col_types = FALSE)
+locations <- read_csv("data-raw/corrosion/locations.csv", show_col_types = FALSE)
+target <- 0.125      # mm/yr, the treatment program's target
+```
+
+## Summary for Ines
+
+<!-- Write this section last, in plain words, in five or six sentences: which locations are
+     probably above the target (and how probable), which three to act at and on what criterion,
+     what the water temperature does, what to expect at E-401, and the main caveats. -->
+
+- **Above the target:** ...
+- **Where to act:** ...
+- **Temperature:** ...
+- **E-401:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many coupons per location? Do the exposure days agree with the
+     dates? Which coupons are lost? Does any rate look impossible? -->
+
+```{r}
+#| label: look
+coupons_raw |> count(loc_id)
+summary(coupons_raw)
+coupons_raw |>
+  mutate(days_from_dates = as.numeric(as.Date(removed) - as.Date(installed))) |>
+  filter(days_from_dates != exposure_days)          # coupons whose two exposure times disagree
+```
+
+```{r}
+#| label: rates
+#| fig-height: 5
+# Ines's formula, with the exposure time from the coupon log, as received
+rates_raw <- coupons_raw |>
+  mutate(rate = 87.6 * mass_loss_mg / (area_cm2 * exposure_days * 24 * 7.86)) |>
+  left_join(locations, by = "loc_id")
+
+rates_raw |>
+  filter(!is.na(rate)) |>
+  ggplot(aes(x = rate, y = reorder(loc_id, water_temp_C))) +
+  geom_vline(xintercept = target, linetype = "dashed") +
+  geom_point(alpha = 0.7) +
+  scale_x_log10() +
+  labs(x = "Corrosion rate (mm/yr, log scale)", y = "Location, coldest at the bottom")
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. Then rerun everything below. -->
+
+```{r}
+#| label: clean
+coupons <- coupons_raw
+# Your decisions, for example:
+# coupons <- coupons |>
+#   mutate(hours = ...)                                            # reason: ...
+# Then compute the rate again, drop the lost coupons, and add:
+#   log_rate = log(rate), and temp_c = water_temp_C - 37 (from locations)
+```
+
+## 3. The models
+
+### Priors
+
+<!-- Your priors, with their reasons, and a prior predictive check: simulate typical rates
+     and location effects from the priors, and show that the implied corrosion rates are plausible. -->
+
+```{r}
+#| label: prior-check
+#| eval: false
+set.seed(2026)
+n_sim <- 4000
+intercept <- rnorm(n_sim, ..., ...)           # the log rate at a typical location
+tau <- rexp(n_sim, ...)                        # the between-location SD
+location_rate <- exp(intercept + rnorm(n_sim, 0, tau))
+quantile(location_rate, c(0.025, 0.5, 0.975))  # do these look like corrosion rates?
+```
+
+### Fitting
+
+```{r}
+#| label: fit
+#| eval: false
+library(brms)
+options(brms.backend = "cmdstanr", mc.cores = 4)
+priors <- c(prior(normal(..., ...), class = Intercept),
+            prior(exponential(...), class = sigma))
+fit_pool <- brm(log_rate ~ 1, data = coupons, prior = priors, seed = 1)
+fit_none <- brm(log_rate ~ 0 + loc_id, data = coupons,
+                prior = c(prior(normal(..., ...), class = b), prior(exponential(...), class = sigma)), seed = 2)
+fit_partial <- brm(log_rate ~ 1 + (1 | loc_id), data = coupons,
+                   prior = c(priors, prior(exponential(...), class = sd)), seed = 3)
+fit_temp <- brm(log_rate ~ temp_c + (1 | loc_id), data = coupons,
+                prior = c(priors, prior(normal(0, ...), class = b), prior(exponential(...), class = sd)), seed = 4)
+summary(fit_temp)                              # R-hat, ESS, and any warnings about divergences
+```
+
+## 4. Checks and comparison
+
+<!-- Posterior predictive checks aimed at the models' assumptions, and a LOO comparison.
+     What does each comparison predict: a new coupon, or a new location? -->
+
+```{r}
+#| label: checks
+#| eval: false
+pp_check(fit_temp)                                                        # the whole distribution
+# Location means: can each model reproduce them? (bayesplot directly, because the pooled
+# model's own data doesn't include loc_id, so pp_check() can't group by it)
+bayesplot::ppc_stat_grouped(coupons$log_rate, posterior_predict(fit_pool), group = coupons$loc_id, stat = "mean")
+bayesplot::ppc_stat_grouped(coupons$log_rate, posterior_predict(fit_temp), group = coupons$loc_id, stat = "mean")
+```
+
+```{r}
+#| label: compare
+#| eval: false
+loo_compare(loo(fit_pool), loo(fit_none), loo(fit_partial), loo(fit_temp))
+```
+
+## 5. The answers
+
+<!-- Each location's typical rate (posterior median of exp(mu_j)) with a 90% credible interval,
+     and the probability that it's above the target. Then your three locations, and E-401. -->
+
+```{r}
+#| label: answers
+#| eval: false
+new_locations <- locations |> mutate(temp_c = water_temp_C - 37)
+typical <- exp(posterior_linpred(fit_temp, newdata = new_locations))       # draws of each location's typical rate
+answers <- new_locations |>
+  mutate(median = apply(typical, 2, median),
+         lower = apply(typical, 2, quantile, 0.05),
+         upper = apply(typical, 2, quantile, 0.95),
+         p_over_target = colMeans(typical > target)) |>
+  arrange(desc(p_over_target))
+knitr::kable(answers, digits = 3)
+```
+
+```{r}
+#| label: e401
+#| eval: false
+# E-401 (CW-16): the next coupon, including the coupon-to-coupon scatter
+next_coupon <- exp(posterior_predict(fit_temp, newdata = filter(new_locations, loc_id == "CW-16")))
+quantile(next_coupon, c(0.05, 0.5, 0.95))
+```
+
+## 6. What partial pooling changed
+
+<!-- No pooling against partial pooling, location by location. Which moved most, and why? -->
+
+```{r}
+#| label: pooling
+#| eval: false
+# The same summary for fit_none, then a plot of both, with each location's number of coupons
+```
+
+## 7. Limitations
+
+<!-- What can't the analysis show? One temperature per location, coupons as a proxy for the
+     equipment itself, independence between a location's coupons, changes in treatment over time ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~coupon,   ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

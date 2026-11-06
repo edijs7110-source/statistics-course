@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Fit a multilayer perceptron to the churn data with nnet, and watch it memorize the training accounts. Then rein it in three ways: stop training early, judged on the validation set; add weight decay; and keep the hidden layer small. Average several networks, and look inside the best one with input importance and partial dependence. Then compare it with the engineered logistic regression, and see why the network doesn’t win here.">
+
+<title>Neural networks for prediction – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Neural networks for prediction</h1>
+<p class="subtitle lead">Flexible, hungry, and in need of a leash</p>
+</div>
+
+<div>
+  <div class="description">
+    Fit a multilayer perceptron to the churn data with nnet, and watch it memorize the training accounts. Then rein it in three ways: stop training early, judged on the validation set; add weight decay; and keep the hidden layer small. Average several networks, and look inside the best one with input importance and partial dependence. Then compare it with the engineered logistic regression, and see why the network doesn’t win here.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 8 · Lesson 10 of 13</span> <span class="meta-item">Week 128 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>Neural networks are STAT 585’s third classic predictive model, next to trees and logistic regression. In SAS Enterprise Miner, a “Neural Network” node sits beside the “Decision Tree” and “Regression” nodes, and an analyst runs all three on the same data and compares them. Module 7 built networks from their parts. This lesson uses them the way a business analyst does: on a real prediction problem, with the validation set as the referee.</p>
+<p>The big difference from Module 7 is the stakes: a churn network that memorizes the training accounts will send the engineers to the wrong customers. So most of the lesson is about restraint.</p>
+<div class="fizz">
+<p>A neural network is the most flexible model in this module, and that’s exactly the danger. Today is about keeping it honest.</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>prepare inputs for a network: dummy columns and standardizing</li>
+<li>watch a network overfit, and measure how badly</li>
+<li>stop training early, using the validation set</li>
+<li>tune the weight decay and the number of hidden units</li>
+<li>average several networks</li>
+<li>explain a network with input importance and partial dependence</li>
+</ul>
+<section id="preparing-the-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="preparing-the-inputs">Preparing the inputs</h2>
+<p>Networks need numbers on comparable scales. The setup code prepares the accounts as in Lesson 9 (satisfaction filled, with a missingness flag; sales reps dropped), turns the factors into dummy columns with <code>model.matrix()</code>, and standardizes everything with the <em>training</em> means and SDs. <code>Dtr</code> is the training data, with the 0/1 target <code>churn</code>, and <code>Dva</code> the validation inputs; <code>yva</code> holds the validation target as 0/1. It also defines <code>auc()</code> and <code>ll()</code>, the log loss.</p>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex8_10_prepare&quot;,&quot;ex8_10_overfit&quot;,&quot;ex8_10_early&quot;,&quot;ex8_10_decay&quot;,&quot;ex8_10_size&quot;,&quot;ex8_10_average&quot;,&quot;ex8_10_importance&quot;,&quot;ex8_10_pdp&quot;,&quot;ex8_10_price&quot;,&quot;ex8_10_compare&quot;]">
+<script type="exercise-setup-ex8_10_prepare-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_overfit-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_early-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_decay-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_size-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_average-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_importance-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_pdp-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_price-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+<script type="exercise-setup-ex8_10_compare-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4OF8xMF9wcmVwYXJlIiwiZXg4XzEwX292ZXJmaXQiLCJleDhfMTBfZWFybHkiLCJleDhfMTBfZGVjYXkiLCJleDhfMTBfc2l6ZSIsImV4OF8xMF9hdmVyYWdlIiwiZXg4XzEwX2ltcG9ydGFuY2UiLCJleDhfMTBfcGRwIiwiZXg4XzEwX3ByaWNlIiwiZXg4XzEwX2NvbXBhcmUiXSwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZSwic2V0dXAiOnRydWV9LCJjb2RlIjoibGlicmFyeShubmV0KVxubGlicmFyeShOZXVyYWxOZXRUb29scylcbmNodXJuIDwtIHJlYWQuY3N2KFwiZGF0YS9jdXN0b21lcl9jaHVybi5jc3ZcIiwgc3RyaW5nc0FzRmFjdG9ycyA9IFRSVUUpXG5jaHVybiRhY2NvdW50IDwtIE5VTExcbnNldC5zZWVkKDgwMTIpXG5wYXJ0IDwtIHNhbXBsZShjKFwidHJhaW5cIiwgXCJ2YWxpZFwiLCBcInRlc3RcIiksIG5yb3coY2h1cm4pLCByZXBsYWNlID0gVFJVRSwgcHJvYiA9IGMoMC41LCAwLjI1LCAwLjI1KSlcbnByZXAgPC0gZnVuY3Rpb24oZCkge1xuICBkJHNhdF9taXNzaW5nIDwtIGFzLmludGVnZXIoaXMubmEoZCRzYXRpc2ZhY3Rpb24pKTsgZCRzYXRpc2ZhY3Rpb25baXMubmEoZCRzYXRpc2ZhY3Rpb24pXSA8LSA3XG4gIGQkc2FsZXNfcmVwIDwtIE5VTEw7IGRcbn1cbnRyYWluIDwtIHByZXAoY2h1cm5bcGFydCA9PSBcInRyYWluXCIsIF0pOyB2YWxpZCA8LSBwcmVwKGNodXJuW3BhcnQgPT0gXCJ2YWxpZFwiLCBdKVxuWHRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgdHJhaW4pWywgLTFdOyBYdmEgPC0gbW9kZWwubWF0cml4KGNodXJuZWQgfiAuLCB2YWxpZClbLCAtMV1cbm11IDwtIGNvbE1lYW5zKFh0cik7IHMgPC0gYXBwbHkoWHRyLCAyLCBzZClcbkR0ciA8LSBkYXRhLmZyYW1lKHNjYWxlKFh0ciwgbXUsIHMpLCBjaHVybiA9IGFzLmludGVnZXIodHJhaW4kY2h1cm5lZCA9PSBcInllc1wiKSlcbkR2YSA8LSBkYXRhLmZyYW1lKHNjYWxlKFh2YSwgbXUsIHMpKVxueXZhIDwtIGFzLmludGVnZXIodmFsaWQkY2h1cm5lZCA9PSBcInllc1wiKVxuYXVjIDwtIGZ1bmN0aW9uKHAsIHkpIHtcbiAgeSA8LSBpZiAoaXMuZmFjdG9yKHkpKSB5ID09IFwieWVzXCIgZWxzZSB5ID09IDFcbiAgciA8LSByYW5rKHApOyBuMSA8LSBzdW0oeSk7IG4wIDwtIHN1bSgheSlcbiAgKHN1bShyW3ldKSAtIG4xICogKG4xICsgMSkgLyAyKSAvIChuMSAqIG4wKVxufVxubGwgPC0gZnVuY3Rpb24ocCwgeSkgLW1lYW4oeSAqIGxvZyhwbWF4KHAsIDFlLTgpKSArICgxIC0geSkgKiBsb2cocG1heCgxIC0gcCwgMWUtOCkpKSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> How many input columns does the network get, and what are the means and SDs of the standardized training columns?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_prepare" data-caption="Your turn · Inputs for a network">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgSW5wdXRzIGZvciBhIG5ldHdvcmsiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9wcmVwYXJlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpbnB1dHMgPC0gRHRyWywgbmFtZXMoRHRyKSAhPSBcImNodXJuXCJdXG5jKGNvbHVtbnMgPSBuY29sKGlucHV0cyksIG1heF9hYnNfbWVhbiA9IG1heChhYnMoY29sTWVhbnMoaW5wdXRzKSkpLCBtZWFuX3NkID0gbWVhbihhcHBseShpbnB1dHMsIDIsIF9fX19fXykpKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_prepare">
+<p>Apply <code>sd</code> to each column.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_prepare">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>inputs <span class="ot">&lt;-</span> Dtr[, <span class="fu">names</span>(Dtr) <span class="sc">!=</span> <span class="st">"churn"</span>]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">columns =</span> <span class="fu">ncol</span>(inputs), <span class="at">max_abs_mean =</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">colMeans</span>(inputs))), <span class="at">mean_sd =</span> <span class="fu">mean</span>(<span class="fu">apply</span>(inputs, <span class="dv">2</span>, sd)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>22 columns: the 9 numeric inputs, the missingness flag, and 12 dummy columns for the segment (7), the region (4) and the service contract (1). Every column has mean 0 and SD 1. The validation inputs are scaled with the <em>training</em> means and SDs, so their columns aren’t exactly 0 and 1, as it should be: anything else would leak information from the validation set into the preparation.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_prepare" data-check="true">
+<script type="exercise-check-ex8_10_prepare-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9wcmVwYXJlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gMyAmJiBpc1RSVUUoclsxXSA9PSAyMikgJiYgaXNUUlVFKHJbMl0gPCAxZS0xMCkgJiYgaXNUUlVFKGFicyhyWzNdIC0gMSkgPCAxZS0xMCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogMjIgc3RhbmRhcmRpemVkIGNvbHVtbnMuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBBcHBseSBzZC5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="a-network-that-memorizes" class="level2">
+<h2 class="anchored" data-anchor-id="a-network-that-memorizes">A network that memorizes</h2>
+<p><strong>Your turn.</strong> Fit a network with 10 hidden units, no weight decay and up to 2,000 iterations, with the cross-entropy loss (<code>entropy = TRUE</code>, the right loss for a 0/1 target). Compare its training and validation AUCs.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_overfit" data-caption="Your turn · Too much freedom">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVG9vIG11Y2ggZnJlZWRvbSIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg4XzEwX292ZXJmaXQiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNldC5zZWVkKDgxMDEpXG5uZXQgPC0gbm5ldChjaHVybiB+IC4sIGRhdGEgPSBEdHIsIHNpemUgPSAxMCwgZGVjYXkgPSBfX19fX18sIG1heGl0ID0gMjAwMCwgZW50cm9weSA9IFRSVUUsIHRyYWNlID0gRkFMU0UpXG5jKHdlaWdodHMgPSBsZW5ndGgobmV0JHd0cyksIHRyYWluID0gYXVjKHByZWRpY3QobmV0LCBEdHIpLCBEdHIkY2h1cm4pLCB2YWxpZCA9IGF1YyhwcmVkaWN0KG5ldCwgRHZhKSwgeXZhKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_overfit">
+<p>No weight decay: <code>decay = 0</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_overfit">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8101</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>net <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">10</span>, <span class="at">decay =</span> <span class="dv">0</span>, <span class="at">maxit =</span> <span class="dv">2000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">weights =</span> <span class="fu">length</span>(net<span class="sc">$</span>wts), <span class="at">train =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dtr), Dtr<span class="sc">$</span>churn), <span class="at">valid =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dva), yva))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>241 weights for 1,962 accounts, a training AUC of 0.959 and a validation AUC of 0.668. The network has memorized the training accounts, noise and all, and on new accounts it’s worse than Lesson 1’s five-input logistic regression (0.766). The exact numbers can differ slightly between computers, because the optimizer’s path is sensitive to rounding.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_overfit" data-check="true">
+<script type="exercise-check-ex8_10_overfit-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9vdmVyZml0IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gMyAmJiBpc1RSVUUoclsxXSA9PSAyNDEpICYmIGlzVFJVRShyWzJdID4gMC45KSAmJiBpc1RSVUUoclszXSA8IDAuNzIpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGJyaWxsaWFudCBvbiB0cmFpbmluZywgcG9vciBvbiB2YWxpZGF0aW9uLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIGRlY2F5ID0gMC5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="early-stopping" class="level2">
+<h2 class="anchored" data-anchor-id="early-stopping">Early stopping</h2>
+<p>A network starts from small random weights, which make it nearly linear, and becomes more complex as training goes on. Stopping the training early, at the point where the validation error is lowest, is the classic way to keep a network simple. It’s what SAS Enterprise Miner’s neural network node does by default, with the validation set as the judge. With nnet, the same random start (the same <code>set.seed()</code>) and a smaller <code>maxit</code> give the same path, cut short.</p>
+<p><strong>Your turn.</strong> Fit the 10-unit network with <code>maxit</code> of 5, 10, 20, 50, 100 and 500, from the same start, and find the validation log loss and AUC of each.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_early" data-caption="Your turn · When to stop">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2hlbiB0byBzdG9wIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDhfMTBfZWFybHkiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InQoc2FwcGx5KGMoNSwgMTAsIDIwLCA1MCwgMTAwLCA1MDApLCBmdW5jdGlvbihpdCkge1xuICBzZXQuc2VlZCg4MTAyKVxuICBuZXQgPC0gbm5ldChjaHVybiB+IC4sIGRhdGEgPSBEdHIsIHNpemUgPSAxMCwgZGVjYXkgPSAwLCBtYXhpdCA9IF9fX19fXywgZW50cm9weSA9IFRSVUUsIHRyYWNlID0gRkFMU0UpXG4gIHAgPC0gcHJlZGljdChuZXQsIER2YSlcbiAgYyhpdGVyYXRpb25zID0gaXQsIHZhbGlkX2xvZ19sb3NzID0gbGwocCwgeXZhKSwgdmFsaWRfYXVjID0gYXVjKHAsIHl2YSksIHRyYWluX2F1YyA9IGF1YyhwcmVkaWN0KG5ldCwgRHRyKSwgRHRyJGNodXJuKSlcbn0pKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_early">
+<p>Use the function’s argument: <code>maxit = it</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_early">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">t</span>(<span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">500</span>), <span class="cf">function</span>(it) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">8102</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  net <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">10</span>, <span class="at">decay =</span> <span class="dv">0</span>, <span class="at">maxit =</span> it, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">predict</span>(net, Dva)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">iterations =</span> it, <span class="at">valid_log_loss =</span> <span class="fu">ll</span>(p, yva), <span class="at">valid_auc =</span> <span class="fu">auc</span>(p, yva), <span class="at">train_auc =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dtr), Dtr<span class="sc">$</span>churn))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The validation log loss is lowest after about 10 iterations (0.460), and then climbs steadily, to 0.96 by 100 iterations, while the training AUC keeps rising, from 0.79 to 0.97. The validation AUC is best even earlier, at 5 iterations (0.761), and falls to 0.69. So the right amount of training is very little: after 10 iterations, every further one fits noise. Early stopping picks the network at the bottom of the validation curve. Its weakness is that the validation set now does two jobs, stopping and judging, so a separate test set is needed for an honest estimate.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_early" data-check="true">
+<script type="exercise-check-ex8_10_early-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9lYXJseSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiciA8LSB0cnlDYXRjaChhcy5tYXRyaXgoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmICghaXMubnVsbChyKSAmJiBhbGwoZGltKHIpID09IGMoNiwgNCkpICYmIGlzVFJVRShyWzYsIDRdID4gclsyLCA0XSkgJiYgaXNUUlVFKHJbNiwgMl0gPiByWzIsIDJdKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiB0aGUgdmFsaWRhdGlvbiBsb3NzIHJpc2VzIGFzIHRyYWluaW5nIGdvZXMgb24uXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2UgbWF4aXQgPSBpdC5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="weight-decay-and-size" class="level2">
+<h2 class="anchored" data-anchor-id="weight-decay-and-size">Weight decay and size</h2>
+<p><strong>Your turn.</strong> The other leash is weight decay, a ridge penalty on the weights. Fit the 10-unit network to convergence with decays of 0, 0.01, 0.1, 1 and 5, and compare the validation AUCs.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_decay" data-caption="Your turn · Weight decay">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2VpZ2h0IGRlY2F5IiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDhfMTBfZGVjYXkiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InQoc2FwcGx5KGMoMCwgMC4wMSwgMC4xLCAxLCA1KSwgZnVuY3Rpb24oZCkge1xuICBzZXQuc2VlZCg4MTAzKVxuICBuZXQgPC0gbm5ldChjaHVybiB+IC4sIGRhdGEgPSBEdHIsIHNpemUgPSAxMCwgZGVjYXkgPSBfX19fX18sIG1heGl0ID0gMTAwMCwgZW50cm9weSA9IFRSVUUsIHRyYWNlID0gRkFMU0UpXG4gIGMoZGVjYXkgPSBkLCB0cmFpbiA9IGF1YyhwcmVkaWN0KG5ldCwgRHRyKSwgRHRyJGNodXJuKSwgdmFsaWQgPSBhdWMocHJlZGljdChuZXQsIER2YSksIHl2YSkpXG59KSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_decay">
+<p>Use <code>decay = d</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_decay">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">t</span>(<span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="dv">1</span>, <span class="dv">5</span>), <span class="cf">function</span>(d) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">8103</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  net <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">10</span>, <span class="at">decay =</span> d, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">decay =</span> d, <span class="at">train =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dtr), Dtr<span class="sc">$</span>churn), <span class="at">valid =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dva), yva))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The validation AUC climbs from 0.64 without decay to 0.71, 0.72, 0.78 and 0.79 as the decay grows to 5, while the training AUC ends at 0.81 with a decay of 5, against 0.92 to 0.96 with little or no decay. A large decay keeps the weights small, so the hidden units stay in the nearly linear part of their curves, and the network behaves almost like a logistic regression. That’s a hint about these data.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_decay" data-check="true">
+<script type="exercise-check-ex8_10_decay-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9kZWNheSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiciA8LSB0cnlDYXRjaChhcy5tYXRyaXgoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmICghaXMubnVsbChyKSAmJiBhbGwoZGltKHIpID09IGMoNSwgMykpICYmIGlzVFJVRSh3aGljaC5tYXgoclssIDNdKSAlaW4lIGMoNCwgNSkpICYmIGlzVFJVRShhYnMocls1LCAzXSAtIDAuNzg1OCkgPCAwLjAyKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBtb3JlIGRlY2F5LCBiZXR0ZXIgb24gdmFsaWRhdGlvbi5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSBkZWNheSA9IGQuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Your turn.</strong> With a decay of 1, compare networks with 1, 2, 5, 10 and 20 hidden units.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_size" data-caption="Your turn · How many hidden units?">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgSG93IG1hbnkgaGlkZGVuIHVuaXRzPyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg4XzEwX3NpemUiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNhcHBseShjKDEsIDIsIDUsIDEwLCAyMCksIGZ1bmN0aW9uKGgpIHtcbiAgc2V0LnNlZWQoODEwNClcbiAgbmV0IDwtIG5uZXQoY2h1cm4gfiAuLCBkYXRhID0gRHRyLCBzaXplID0gX19fX19fLCBkZWNheSA9IDEsIG1heGl0ID0gMTAwMCwgZW50cm9weSA9IFRSVUUsIHRyYWNlID0gRkFMU0UsIE1heE5XdHMgPSA1MDAwKVxuICBjKHNpemUgPSBoLCB2YWxpZCA9IGF1YyhwcmVkaWN0KG5ldCwgRHZhKSwgeXZhKSlcbn0pIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_size">
+<p>Use <code>size = h</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_size">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>), <span class="cf">function</span>(h) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">8104</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  net <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> h, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>, <span class="at">MaxNWts =</span> <span class="dv">5000</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">size =</span> h, <span class="at">valid =</span> <span class="fu">auc</span>(<span class="fu">predict</span>(net, Dva), yva))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.788 with a single hidden unit, 0.785 with 2, 0.770 with 5, 0.768 with 10 and 0.782 with 20. One hidden unit with a sigmoid output is a logistic regression passed through an extra S-curve, and it’s as good as anything bigger. The network can’t find the thresholds and the interaction on its own from 1,962 accounts: with weight decay to keep it stable, it ends up close to a logistic regression on the raw inputs (0.787).</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_size" data-check="true">
+<script type="exercise-check-ex8_10_size-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9zaXplIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm1hdHJpeCgucmVzdWx0KSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxuaWYgKCFpcy5udWxsKHIpICYmIGFsbChkaW0ocikgPT0gYygyLCA1KSkgJiYgaXNUUlVFKGFsbChyWzIsIF0gPiAwLjc0KSkgJiYgaXNUUlVFKGFsbChyWzIsIF0gPCAwLjgxKSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogb25lIGhpZGRlbiB1bml0IGlzIGFzIGdvb2QgYXMgdHdlbnR5LlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIHNpemUgPSBoLlwiKVxufSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> Networks from different random starts disagree. Average the predictions of five networks (5 hidden units, decay 1, seeds 8111 to 8115), and compare the average’s validation AUC with each network’s.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_average" data-caption="Your turn · A committee of networks">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQSBjb21taXR0ZWUgb2YgbmV0d29ya3MiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9hdmVyYWdlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJwcmVkcyA8LSBzYXBwbHkoODExMTo4MTE1LCBmdW5jdGlvbihzZWVkKSB7XG4gIHNldC5zZWVkKHNlZWQpXG4gIG5ldCA8LSBubmV0KGNodXJuIH4gLiwgZGF0YSA9IER0ciwgc2l6ZSA9IDUsIGRlY2F5ID0gMSwgbWF4aXQgPSAxMDAwLCBlbnRyb3B5ID0gVFJVRSwgdHJhY2UgPSBGQUxTRSlcbiAgcHJlZGljdChuZXQsIER2YSlcbn0pXG5jKGVhY2ggPSBhcHBseShwcmVkcywgMiwgYXVjLCB5ID0geXZhKSwgYXZlcmFnZSA9IGF1YyhfX19fX18ocHJlZHMpLCB5dmEpKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_average">
+<p>Average across the five columns: <code>rowMeans(preds)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_average">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>preds <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">8111</span><span class="sc">:</span><span class="dv">8115</span>, <span class="cf">function</span>(seed) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  net <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(net, Dva)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">each =</span> <span class="fu">apply</span>(preds, <span class="dv">2</span>, auc, <span class="at">y =</span> yva), <span class="at">average =</span> <span class="fu">auc</span>(<span class="fu">rowMeans</span>(preds), yva))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The five networks score 0.770 to 0.789, and their average 0.794, better than any of them. Each network has fitted the noise in its own way, and averaging cancels part of it. It’s the same idea as bagging and random forests, next lesson but one, and the standard practice for networks in production.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_average" data-check="true">
+<script type="exercise-check-ex8_10_average-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9hdmVyYWdlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gNiAmJiBpc1RSVUUocls2XSA+PSBtYXgoclsxOjVdKSAtIDAuMDA1KSAmJiBpc1RSVUUoYWJzKHJbNl0gLSAwLjc5NDUpIDwgMC4wMikpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogdGhlIGF2ZXJhZ2UgYmVhdHMgdGhlIGluZGl2aWR1YWwgbmV0d29ya3MuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2Ugcm93TWVhbnMocHJlZHMpLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="looking-inside" class="level2">
+<h2 class="anchored" data-anchor-id="looking-inside">Looking inside</h2>
+<p>A network’s weights mean nothing one by one, but two summaries help. <strong>Input importance</strong> combines the weights along every path from an input to the output; Olden’s method multiplies the input-to-hidden and hidden-to-output weights and sums them, keeping the signs. A <strong>partial dependence</strong> curve sets one input to a value for <em>every</em> account, averages the predictions, and repeats across the input’s range: it shows the model’s average response to that input.</p>
+<p><strong>Your turn.</strong> Fit a network with 5 hidden units and decay 1, and find its six most important inputs by Olden’s method.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_importance" data-caption="Your turn · Which inputs does the network use?">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2hpY2ggaW5wdXRzIGRvZXMgdGhlIG5ldHdvcmsgdXNlPyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg4XzEwX2ltcG9ydGFuY2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNldC5zZWVkKDgxMDUpXG5iZXN0IDwtIG5uZXQoY2h1cm4gfiAuLCBkYXRhID0gRHRyLCBzaXplID0gNSwgZGVjYXkgPSAxLCBtYXhpdCA9IDEwMDAsIGVudHJvcHkgPSBUUlVFLCB0cmFjZSA9IEZBTFNFKVxuaW1wIDwtIG9sZGVuKGJlc3QsIGJhcl9wbG90ID0gX19fX19fKVxuaGVhZChpbXBbb3JkZXIoLWFicyhpbXAkaW1wb3J0YW5jZSkpLCAsIGRyb3AgPSBGQUxTRV0sIDYpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_importance">
+<p><code>bar_plot = FALSE</code> returns the numbers instead of a plot.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_importance">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8105</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>imp <span class="ot">&lt;-</span> <span class="fu">olden</span>(best, <span class="at">bar_plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(imp[<span class="fu">order</span>(<span class="sc">-</span><span class="fu">abs</span>(imp<span class="sc">$</span>importance)), , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="dv">6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The price index (+4.3), the volume change (<span class="math inline">-3.9</span>), the late deliveries (+3.9), the account’s age (<span class="math inline">-3.6</span>), the service contract (<span class="math inline">-2.2</span>) and the satisfaction (<span class="math inline">-2.2</span>). The same inputs as every tree and regression in this module, with sensible signs: higher prices and more late deliveries raise the risk; growing volume, longer relationships, a service contract and satisfied customers lower it. Agreement between very different models is reassuring evidence that these effects are real.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_importance" data-check="true">
+<script type="exercise-check-ex8_10_importance-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9pbXBvcnRhbmNlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLmRhdGEuZnJhbWUoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmICghaXMubnVsbChyKSAmJiBucm93KHIpID09IDYgJiYgYWxsKGMoXCJwcmljZV9pbmRleFwiLCBcImxhdGVfZGVsaXZlcmllc1wiLCBcInZvbHVtZV9jaGFuZ2VfcGN0XCIpICVpbiUgcm93bmFtZXMocilbMTo0XSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogcHJpY2UsIHZvbHVtZSBjaGFuZ2UsIGxhdGUgZGVsaXZlcmllcyBhbmQgYWdlIGxlYWQuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBVc2UgYmFyX3Bsb3QgPSBGQUxTRS5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Your turn.</strong> Compute the network’s partial dependence on the late deliveries, from 0 to 6: set every validation account’s late deliveries to each value in turn (before scaling), and average the predicted probabilities.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_pdp" data-caption="Your turn · Partial dependence">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgUGFydGlhbCBkZXBlbmRlbmNlIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDhfMTBfcGRwIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJzZXQuc2VlZCg4MTA1KVxuYmVzdCA8LSBubmV0KGNodXJuIH4gLiwgZGF0YSA9IER0ciwgc2l6ZSA9IDUsIGRlY2F5ID0gMSwgbWF4aXQgPSAxMDAwLCBlbnRyb3B5ID0gVFJVRSwgdHJhY2UgPSBGQUxTRSlcbnBkIDwtIHNhcHBseSgwOjYsIGZ1bmN0aW9uKHYpIHtcbiAgWCA8LSBYdmFcbiAgWFssIFwibGF0ZV9kZWxpdmVyaWVzXCJdIDwtIF9fX19fX1xuICBtZWFuKHByZWRpY3QoYmVzdCwgZGF0YS5mcmFtZShzY2FsZShYLCBtdSwgcykpKSlcbn0pXG5yb3VuZChzZXROYW1lcyhwZCwgMDo2KSwgMykifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_pdp">
+<p>Set the column to the function’s argument, <code>v</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_pdp">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8105</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>pd <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>, <span class="cf">function</span>(v) {</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> Xva</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  X[, <span class="st">"late_deliveries"</span>] <span class="ot">&lt;-</span> v</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">predict</span>(best, <span class="fu">data.frame</span>(<span class="fu">scale</span>(X, mu, s))))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">setNames</span>(pd, <span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>From 12.6% with no late deliveries to 54.8% with six, rising fastest between two and four. The network has learned that late deliveries matter, and roughly where, but as a smooth S-curve. The data, as the bars in the plot below show, have a step: the churn rate is 14% with none or one late delivery, 22% with two, and jumps to 50% at three. (The bars for five and six come from only ten accounts, so don’t read much into them.) The network, held back by its weight decay, can’t make a step that sharp, which is one reason the engineered logistic regression of Lesson 9, with its 0/1-2/3+ groups, did better.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_pdp" data-check="true">
+<script type="exercise-check-ex8_10_pdp-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9wZHAiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InIgPC0gdHJ5Q2F0Y2goYXMubnVtZXJpYygucmVzdWx0KSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxuaWYgKGxlbmd0aChyKSA9PSA3ICYmIGlzVFJVRShhbGwoZGlmZihyKSA+IDApKSAmJiBpc1RSVUUoYWJzKHJbNF0gLSAwLjM0MykgPCAwLjAzKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBhIHNtb290aCByaXNlLCBzdGVlcGVzdCBiZXR3ZWVuIDIgYW5kIDQuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBTZXQgdGhlIGNvbHVtbiB0byB2LlwiKVxufSJ9
+</script>
+</div>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8105</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>pd <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>, <span class="cf">function</span>(v) { X <span class="ot">&lt;-</span> Xva; X[, <span class="st">"late_deliveries"</span>] <span class="ot">&lt;-</span> v; <span class="fu">mean</span>(<span class="fu">predict</span>(best, <span class="fu">data.frame</span>(<span class="fu">scale</span>(X, mu, s)))) })</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>obs <span class="ot">&lt;-</span> <span class="fu">tapply</span>(yva, <span class="fu">pmin</span>(valid<span class="sc">$</span>late_deliveries, <span class="dv">6</span>), mean)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(obs)), <span class="at">y =</span> <span class="fu">as.numeric</span>(obs)), <span class="at">fill =</span> <span class="st">"grey80"</span>, <span class="at">width =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">y =</span> pd), <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.9</span>) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">y =</span> pd), <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">6</span>) <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Late deliveries (6 = 6 or more for the bars)"</span>, <span class="at">y =</span> <span class="st">"Churn probability"</span>) <span class="sc">+</span> <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="10-neural-predictive_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Partial dependence of the churn probability on late deliveries, from 0 to 6, for the network, as a pink line with points, and the actual validation churn rate for each number of late deliveries, as gray bars. The network's curve rises smoothly from 0.13 at 0 to 0.55 at 6. The actual rates are 0.14 for 0 and 1 late deliveries and 0.22 for 2, jump to 0.50 at 3 and 0.54 at 4, and reach 0.86 at 5 and 1.00 at 6 or more, where there are only 7 and 3 accounts." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Go deeper: why the network didn’t find the threshold
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>A sigmoid hidden unit can make a step, but only if its weights are large, and a step at exactly three late deliveries needs the weight on that input to be large and the others small. Weight decay, which kept the network from overfitting, penalizes exactly such large weights. Without decay, the network can make steps, and it makes far too many, fitting noise. With 1,962 accounts and 22 inputs, there isn’t enough data for the network to tell the real step from the noisy ones, so the best it can do is a smooth compromise. That’s the general pattern: flexible models need data in proportion to their flexibility, and a few hand-crafted inputs can stand in for a lot of data. Ripley’s <em>Pattern Recognition and Neural Networks</em> (Cambridge, 1996), by nnet’s author, discusses weight decay and early stopping as forms of regularization.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · Price.</strong> Compute the network’s partial dependence on the price index at 0.90, 0.95, 1.00, 1.03, 1.05, 1.08 and 1.12.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_price" data-caption="Challenge · The price response">
+<div>
+<div id="webr-18" class="exercise-cell">
+
+</div>
+<script type="webr-18-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgVGhlIHByaWNlIHJlc3BvbnNlIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDhfMTBfcHJpY2UiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InNldC5zZWVkKDgxMDUpXG5iZXN0IDwtIG5uZXQoY2h1cm4gfiAuLCBkYXRhID0gRHRyLCBzaXplID0gNSwgZGVjYXkgPSAxLCBtYXhpdCA9IDEwMDAsIGVudHJvcHkgPSBUUlVFLCB0cmFjZSA9IEZBTFNFKVxucHJpY2VzIDwtIGMoMC45MCwgMC45NSwgMS4wMCwgMS4wMywgMS4wNSwgMS4wOCwgMS4xMilcbnBkIDwtIHNhcHBseShwcmljZXMsIGZ1bmN0aW9uKHYpIHtcbiAgWCA8LSBYdmFcbiAgWFssIFwiX19fX19fXCJdIDwtIHZcbiAgbWVhbihwcmVkaWN0KGJlc3QsIGRhdGEuZnJhbWUoc2NhbGUoWCwgbXUsIHMpKSkpXG59KVxucm91bmQoc2V0TmFtZXMocGQsIHByaWNlcyksIDMpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_price">
+<p>The column is <code>"price_index"</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_price">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8105</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Dtr, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>prices <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.90</span>, <span class="fl">0.95</span>, <span class="fl">1.00</span>, <span class="fl">1.03</span>, <span class="fl">1.05</span>, <span class="fl">1.08</span>, <span class="fl">1.12</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>pd <span class="ot">&lt;-</span> <span class="fu">sapply</span>(prices, <span class="cf">function</span>(v) {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> Xva</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  X[, <span class="st">"price_index"</span>] <span class="ot">&lt;-</span> v</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(<span class="fu">predict</span>(best, <span class="fu">data.frame</span>(<span class="fu">scale</span>(X, mu, s))))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">setNames</span>(pd, prices), <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>From 9.5% at 10% below the market to 37.2% at 12% above it, rising smoothly the whole way. Again a smooth version of what the data hold: in truth, the risk jumps above 1.04, and mainly for accounts without a service contract, which a partial dependence curve, by averaging over all accounts, can’t show. (Lesson 13 meets two-way partial dependence, which can.) For Lena, the network’s message is still useful: every point above the market costs retention.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_price" data-check="true">
+<script type="exercise-check-ex8_10_price-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9wcmljZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiciA8LSB0cnlDYXRjaChhcy5udW1lcmljKC5yZXN1bHQpLCBlcnJvciA9IGZ1bmN0aW9uKGUpIE5VTEwpXG5pZiAobGVuZ3RoKHIpID09IDcgJiYgaXNUUlVFKGFsbChkaWZmKHIpID4gMCkpICYmIGlzVFJVRShyWzddID4gMiAqIHJbMV0pKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IHRoZSByaXNrIHJpc2VzIHN0ZWFkaWx5IHdpdGggdGhlIHByaWNlLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIFxcXCJwcmljZV9pbmRleFxcXCIuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Challenge 2 · Against the engineered regression.</strong> Lesson 9’s engineered logistic regression had a validation AUC of 0.853. Feed the same engineered inputs to a network (5 hidden units, decay 1), and compare.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_compare" data-caption="Challenge · A network with good inputs">
+<div>
+<div id="webr-20" class="exercise-cell">
+
+</div>
+<script type="webr-20-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgQSBuZXR3b3JrIHdpdGggZ29vZCBpbnB1dHMiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9jb21wYXJlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJlbmdpbmVlciA8LSBmdW5jdGlvbihkKSB7XG4gIGQkbGF0ZV9ncnAgPC0gY3V0KGQkbGF0ZV9kZWxpdmVyaWVzLCBjKC0xLCAwLCAyLCBJbmYpLCBsYWJlbHMgPSBjKFwiMFwiLCBcIjEtMlwiLCBcIjMrXCIpKVxuICBkJHZvbF9kcm9wIDwtIGFzLmludGVnZXIoZCR2b2x1bWVfY2hhbmdlX3BjdCA8IC0xNSlcbiAgZCRoaWdoX3ByaWNlIDwtIGFzLmludGVnZXIoZCRwcmljZV9pbmRleCA+IDEuMDQpXG4gIGQkbmV3X2FjY291bnQgPC0gYXMuaW50ZWdlcihkJGFjY291bnRfeWVhcnMgPD0gMilcbiAgZFxufVxuRXRyIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgZW5naW5lZXIodHJhaW4pKVssIC0xXTsgRXZhIDwtIG1vZGVsLm1hdHJpeChjaHVybmVkIH4gLiwgZW5naW5lZXIodmFsaWQpKVssIC0xXVxubV9lIDwtIGNvbE1lYW5zKEV0cik7IHNfZSA8LSBhcHBseShFdHIsIDIsIHNkKVxuRXRyX2QgPC0gZGF0YS5mcmFtZShzY2FsZShFdHIsIG1fZSwgc19lKSwgY2h1cm4gPSBEdHIkY2h1cm4pOyBFdmFfZCA8LSBkYXRhLmZyYW1lKHNjYWxlKEV2YSwgbV9lLCBzX2UpKVxuc2V0LnNlZWQoODEwNilcbm5ldF9lIDwtIG5uZXQoY2h1cm4gfiAuLCBkYXRhID0gRXRyX2QsIHNpemUgPSA1LCBkZWNheSA9IDEsIG1heGl0ID0gMTAwMCwgZW50cm9weSA9IFRSVUUsIHRyYWNlID0gRkFMU0UpXG5hdWMocHJlZGljdChuZXRfZSwgX19fX19fKSwgeXZhKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex8_10_compare">
+<p>Predict the engineered validation data, <code>Eva_d</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex8_10_compare">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>engineer <span class="ot">&lt;-</span> <span class="cf">function</span>(d) {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  d<span class="sc">$</span>late_grp <span class="ot">&lt;-</span> <span class="fu">cut</span>(d<span class="sc">$</span>late_deliveries, <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">2</span>, <span class="cn">Inf</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0"</span>, <span class="st">"1-2"</span>, <span class="st">"3+"</span>))</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  d<span class="sc">$</span>vol_drop <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(d<span class="sc">$</span>volume_change_pct <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">15</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  d<span class="sc">$</span>high_price <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(d<span class="sc">$</span>price_index <span class="sc">&gt;</span> <span class="fl">1.04</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  d<span class="sc">$</span>new_account <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(d<span class="sc">$</span>account_years <span class="sc">&lt;=</span> <span class="dv">2</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  d</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>Etr <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(churned <span class="sc">~</span> ., <span class="fu">engineer</span>(train))[, <span class="sc">-</span><span class="dv">1</span>]; Eva <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(churned <span class="sc">~</span> ., <span class="fu">engineer</span>(valid))[, <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>m_e <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(Etr); s_e <span class="ot">&lt;-</span> <span class="fu">apply</span>(Etr, <span class="dv">2</span>, sd)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>Etr_d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">scale</span>(Etr, m_e, s_e), <span class="at">churn =</span> Dtr<span class="sc">$</span>churn); Eva_d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">scale</span>(Eva, m_e, s_e))</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8106</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>net_e <span class="ot">&lt;-</span> <span class="fu">nnet</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> Etr_d, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">decay =</span> <span class="dv">1</span>, <span class="at">maxit =</span> <span class="dv">1000</span>, <span class="at">entropy =</span> <span class="cn">TRUE</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="fu">auc</span>(<span class="fu">predict</span>(net_e, Eva_d), yva)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.826, up from 0.79 with the raw inputs, but still below the engineered logistic regression (0.853) with the very same inputs. With the thresholds built in, there’s little left for the hidden layer to discover, and its extra flexibility only adds variance. On data with a few strong, simple effects, a well-specified regression is hard to beat; networks earn their keep on large datasets with complex, unknown structure, like images, text or sensor streams, which business tables rarely are.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex8_10_compare" data-check="true">
+<script type="exercise-check-ex8_10_compare-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4OF8xMF9jb21wYXJlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXMubnVtZXJpYygucmVzdWx0KSAmJiBsZW5ndGgoLnJlc3VsdCkgPT0gMSAmJiBpc1RSVUUoYWJzKC5yZXN1bHQgLSAwLjgyNikgPCAwLjAyKSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBnb29kIGlucHV0cyBtYXR0ZXIgbW9yZSB0aGFuIGEgZmxleGlibGUgbW9kZWwuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBQcmVkaWN0IEV2YV9kLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> Why standardize the inputs with the training means and SDs, not the validation set’s?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The validation set is too small</label></li>
+<li><label><input type="checkbox" checked="">Using the validation set’s own statistics would leak information from it into the preparation</label></li>
+<li><label><input type="checkbox">It doesn’t matter</label></li>
+</ul>
+<div class="explain">
+<p>New data must be prepared exactly as the training data were.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> A network has a training AUC of 0.96 and a validation AUC of 0.67. What’s happening?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">It’s underfitting</label></li>
+<li><label><input type="checkbox" checked="">It has memorized the training data</label></li>
+<li><label><input type="checkbox">The validation set is mislabeled</label></li>
+</ul>
+<div class="explain">
+<p>241 weights for 1,962 accounts, without any restraint.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> How does early stopping restrain a network?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">It removes hidden units</label></li>
+<li><label><input type="checkbox" checked="">It stops training when the validation error is lowest, before the weights grow large enough to fit noise</label></li>
+<li><label><input type="checkbox">It adds a penalty</label></li>
+</ul>
+<div class="explain">
+<p>Training starts nearly linear, and gets more complex with each iteration.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> What does a large weight decay make a network behave like?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">A decision tree</label></li>
+<li><label><input type="checkbox" checked="">A nearly linear model, close to logistic regression</label></li>
+<li><label><input type="checkbox">A random guess</label></li>
+</ul>
+<div class="explain">
+<p>Small weights keep the hidden units in the linear part of their curves.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> What does a partial dependence curve show?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">One account’s prediction</label></li>
+<li><label><input type="checkbox" checked="">The average prediction as one input is set to each value for every account</label></li>
+<li><label><input type="checkbox">The network’s weights</label></li>
+</ul>
+<div class="explain">
+<p>It averages over the other inputs, so it can hide interactions.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> Why didn’t the network beat the engineered logistic regression?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Networks are always worse</label></li>
+<li><label><input type="checkbox" checked="">The structure is a few thresholds and an interaction, which the regression was given and the network couldn’t learn reliably from this much data</label></li>
+<li><label><input type="checkbox">The network had too few inputs</label></li>
+</ul>
+<div class="explain">
+<p>Good inputs can be worth more than a flexible model.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You can now use neural networks as a predictive model, and keep them honest. Here’s what you’ve learned:</p>
+<ul>
+<li><strong>Prepare</strong> with dummy columns and training-set standardization: 22 inputs.</li>
+<li><strong>Unrestrained</strong>, a 10-unit network memorized the training accounts: AUC 0.96 on training, 0.67 on validation.</li>
+<li><strong>Early stopping</strong> and <strong>weight decay</strong> restrain it; with a decay of 5, the validation AUC reached about 0.79, and one hidden unit was as good as twenty.</li>
+<li><strong>Averaging</strong> five networks beat each one: 0.794.</li>
+<li><strong>Input importance</strong> and <strong>partial dependence</strong> show what a network uses: price, volume change, late deliveries and age, with smooth responses where the truth has steps.</li>
+<li><strong>Good inputs beat flexibility:</strong> the engineered logistic regression (0.853) remained the best model so far.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Download <a href="data/customer_churn.csv">customer_churn.csv</a> into your project’s <code>data-raw/</code> folder, and install NeuralNetTools.</p>
+<ol type="1">
+<li><strong>Draw the network.</strong> <code>plotnet(best)</code> draws the 5-unit network with its weights as line widths.</li>
+<li><strong>A full early-stopping curve.</strong> Fit the 10-unit, no-decay network with <code>maxit</code> from 1 to 60, and plot the training and validation log loss against the iterations.</li>
+<li><strong>Tune both together.</strong> Make a grid of sizes (1, 3, 5, 10) and decays (0.1, 1, 3, 10), and find the best validation AUC. How flat is the surface?</li>
+<li><strong>Garson’s method.</strong> <code>garson(best)</code> measures importance without signs. Does it rank the inputs like Olden’s?</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>Multilayer perceptron</dt>
+<dd>
+A neural network with one or more hidden layers of units between the inputs and the output.
+</dd>
+<dt>Early stopping</dt>
+<dd>
+Stopping training when the validation error stops improving, to prevent overfitting.
+</dd>
+<dt>Weight decay</dt>
+<dd>
+A ridge penalty on a network’s weights.
+</dd>
+<dt>Cross-entropy (log loss)</dt>
+<dd>
+The loss <span class="math inline">-\sum[y\log p + (1-y)\log(1-p)]</span> for a binary target; <code>entropy = TRUE</code> in nnet.
+</dd>
+<dt>Ensemble of networks</dt>
+<dd>
+Averaging the predictions of several networks trained from different starts.
+</dd>
+<dt>Input importance</dt>
+<dd>
+A summary of how strongly a network’s output depends on each input, from its weights (Garson’s, Olden’s) or from permutations.
+</dd>
+<dt>Partial dependence</dt>
+<dd>
+The average prediction as one input is fixed at each value for every case.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Boehmke and Greenwell, <a href="https://bradleyboehmke.github.io/HOML/"><em>Hands-On Machine Learning with R</em></a>, chapter 13, “Deep Learning”, sections on network architecture and regularization.</li>
+<li>Julian Olden, Michael Joy and Russell Death, “An accurate comparison of methods for quantifying variable importance in artificial neural networks using simulated data”, <em>Ecological Modelling</em> 178, 2004, <a href="https://doi.org/10.1016/j.ecolmodel.2004.03.013">doi:10.1016/j.ecolmodel.2004.03.013</a>.</li>
+<li>Christoph Molnar, <a href="https://christophm.github.io/interpretable-ml-book/"><em>Interpretable Machine Learning</em></a>, the chapter on partial dependence plots.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsIm5uZXQiLCJOZXVyYWxOZXRUb29scyJdLCJyZXBvcyI6W119LCJyZW5kZXJfZGYiOiJkZWZhdWx0In0=
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMjA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0yMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMjAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0yMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8yMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMjAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTg7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE4ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTgtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE4ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xOCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE4LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL2N1c3RvbWVyX2NodXJuLmNzdiJd
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/08-decision-trees";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

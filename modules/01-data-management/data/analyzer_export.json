@@ -1,0 +1,207 @@
+{
+  "instrument": {
+    "id": "GC-ONLINE-2",
+    "location": "Reactor R2 outlet",
+    "software": "ChromaLog 3.1"
+  },
+  "runs": [
+    {
+      "run_id": 101,
+      "time": "2026-03-10T07:30:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.06,
+          "area_pct": 2.54
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.11,
+          "area_pct": 95.85
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.3,
+          "area_pct": 1.61
+        }
+      ]
+    },
+    {
+      "run_id": 102,
+      "time": "2026-03-10T07:35:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.03,
+          "area_pct": 2.03
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.12,
+          "area_pct": 96.25
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.29,
+          "area_pct": 1.72
+        }
+      ]
+    },
+    {
+      "run_id": 103,
+      "time": "2026-03-10T07:40:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.06,
+          "area_pct": 2.46
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.11,
+          "area_pct": 96.13
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.28,
+          "area_pct": 1.41
+        }
+      ]
+    },
+    {
+      "run_id": 104,
+      "time": "2026-03-10T07:45:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.05,
+          "area_pct": 2.23
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.12,
+          "area_pct": 96.96
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.3,
+          "area_pct": 0.81
+        }
+      ]
+    },
+    {
+      "run_id": 105,
+      "time": "2026-03-10T07:50:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.06,
+          "area_pct": 1.8
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.12,
+          "area_pct": 97.25
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.29,
+          "area_pct": 0.95
+        }
+      ]
+    },
+    {
+      "run_id": 106,
+      "time": "2026-03-10T07:55:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.05,
+          "area_pct": 1.24
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.11,
+          "area_pct": 97.52
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.3,
+          "area_pct": 1.24
+        }
+      ]
+    },
+    {
+      "run_id": 107,
+      "time": "2026-03-10T08:00:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.04,
+          "area_pct": 0.87
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.11,
+          "area_pct": 97.97
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.29,
+          "area_pct": 1.16
+        }
+      ]
+    },
+    {
+      "run_id": 108,
+      "time": "2026-03-10T08:05:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.05,
+          "area_pct": 0.87
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.11,
+          "area_pct": 97.86
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.32,
+          "area_pct": 1.27
+        }
+      ]
+    },
+    {
+      "run_id": 109,
+      "time": "2026-03-10T08:10:00Z",
+      "batch": "B18",
+      "peaks": [
+        {
+          "compound": "solvent",
+          "rt_min": 1.06,
+          "area_pct": -0.29
+        },
+        {
+          "compound": "product",
+          "rt_min": 4.12,
+          "area_pct": 98.75
+        },
+        {
+          "compound": "byproduct",
+          "rt_min": 5.31,
+          "area_pct": 1.54
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+---
+title: "Choosing a production strain for the ketoreductase process"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 10 project template.
+  Save this file in the top folder of your plant-study project, as strain-choice.qmd.
+  It expects the handover files, untouched, in data-raw/strain/, together with
+  pl7_fragment.gb from Lesson 2.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the reader is Amaya.
+  Write the text for her.
+  Packages: Biostrings, pwalign and limma (install with BiocManager::install()), and ape.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(Biostrings)
+library(pwalign)
+library(ape)
+library(limma)
+
+dir <- "data-raw/strain"
+s16 <- readDNAStringSet(file.path(dir, "isolates_16s.fasta"))
+kred_dna <- readDNAStringSet(file.path(dir, "isolates_kred.fasta"))
+arr <- read.csv(file.path(dir, "process_array.csv"))
+smp <- read.csv(file.path(dir, "process_samples.csv"))
+fun <- read.csv(file.path(dir, "process_probes.csv"))
+
+# PL-7's KRED protein, from the /translation of the kred CDS in the GenBank record (Lesson 2)
+read_translation <- function(gb, gene) {
+  from <- grep(paste0('/gene="', gene, '"'), gb)[1]
+  t1 <- grep("/translation=", gb); t1 <- t1[t1 > from][1]
+  t2 <- t1 - 1 + grep('"[[:space:]]*$', gb[t1:length(gb)])[1]
+  gsub('[[:space:]"]|/translation=', "", paste(gb[t1:t2], collapse = ""))
+}
+kred_pl7 <- AAString(read_translation(readLines(file.path(dir, "pl7_fragment.gb")), "kred"))
+catalytic <- c(S = 141, Y = 154, K = 158)   # positions in PL-7's KRED
+motif <- 12:19                              # TGxxxGxG, the cofactor-binding motif
+```
+
+## Summary for Amaya
+
+<!-- Write this section last, in plain words, in five or six sentences: which isolates are
+     close relatives of PL-7 (and how sure we are), which carry an intact kred gene, which
+     strain(s) you recommend for the fermentation trials, and which genes respond to high
+     substrate load. -->
+
+- **The isolates:** ...
+- **Intact kred genes:** ...
+- **Recommendation:** ...
+- **High substrate load:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many sequences, how long, any oddities? How many probes, genes
+     and arrays? -->
+
+```{r}
+#| label: look
+data.frame(name = names(s16), length = width(s16), Ns = letterFrequency(s16, "N")[, 1])
+data.frame(name = names(kred_dna), length = width(kred_dna), length_mod_3 = width(kred_dna) %% 3)
+dim(arr); head(arr, 3)
+smp
+c(probes = nrow(arr), genes = length(unique(arr$gene)))
+```
+
+## 2. What are the isolates?
+
+<!-- Lessons 4, 5, 8 and 9. Check each read's orientation, place the reads on a common
+     coordinate system, compute distances, build a tree, and bootstrap it. -->
+
+```{r}
+#| label: orientation
+#| eval: false
+ref <- s16[["REF_Rhodococcus_PL7"]]
+score <- function(x) pairwiseAlignment(x, ref, type = "global-local", scoreOnly = TRUE)
+fwd <- sapply(seq_along(s16), function(i) score(s16[[i]]))
+rev <- sapply(seq_along(s16), function(i) score(reverseComplement(s16[[i]])))
+flip <- rev > fwd
+names(s16)[flip]                                  # which reads are backwards?
+s16[flip] <- reverseComplement(s16[flip])
+```
+
+```{r}
+#| label: tree
+#| eval: false
+# The 16S reads differ only by substitutions and trimming, so each can be placed on the
+# PL-7 reference's coordinates; aligned() pads the ends with gaps.
+placed <- sapply(seq_along(s16), function(i) as.character(aligned(pairwiseAlignment(s16[[i]], ref, type = "global-local"))))
+dna <- as.DNAbin(strsplit(setNames(placed, names(s16)), ""))
+d <- dist.dna(dna, model = "K80", pairwise.deletion = TRUE)   # gaps and Ns are left out pair by pair
+tree <- root(nj(d), "...", resolve.root = TRUE)                # which reference is the outgroup?
+boots <- boot.phylo(tree, as.matrix(dna), function(x) root(nj(dist.dna(x, model = "K80", pairwise.deletion = TRUE)), "...", resolve.root = TRUE), B = 200, quiet = TRUE)
+tree$node.label <- round(100 * boots / 200)
+plot(tree, show.node.label = TRUE, cex = 0.8)
+```
+
+## 3. Which isolates carry an intact kred gene?
+
+<!-- Lessons 1, 3 and 4. Translate each gene on both strands, align the protein with PL-7's KRED,
+     and check the catalytic residues and the motif. What has gone wrong in the broken ones? -->
+
+```{r}
+#| label: kred
+#| eval: false
+n_stops <- function(p) sum(strsplit(as.character(p), "")[[1]] == "*")
+check_one <- function(x) {
+  f <- translate(x, if.fuzzy.codon = "X"); r <- translate(reverseComplement(x), if.fuzzy.codon = "X")
+  strand <- if (n_stops(f) <= n_stops(r)) "+" else "-"
+  p <- if (strand == "+") f else r
+  aln <- pairwiseAlignment(AAString(sub("[*].*$", "", as.character(p))), kred_pl7,
+                           substitutionMatrix = "BLOSUM62", gapOpening = 10, gapExtension = 0.5, type = "global-local")
+  a <- strsplit(as.character(aligned(aln)), "")[[1]]          # the isolate's protein in PL-7's coordinates
+  data.frame(strand = strand, stops = n_stops(p), identity = round(pid(aln), 1),
+             S141 = a[catalytic["S"]], Y154 = a[catalytic["Y"]], K158 = a[catalytic["K"]],
+             motif = paste(a[motif], collapse = ""))
+}
+kred_check <- do.call(rbind, lapply(seq_along(kred_dna), function(i) check_one(kred_dna[[i]])))
+rownames(kred_check) <- names(kred_dna)
+kred_check
+# a gene with stops on both strands: align its DNA with PL-7's kred DNA (Lesson 2) to find out why
+```
+
+## 4. Which genes respond to high substrate load?
+
+<!-- Lessons 12 and 13. Preprocess, handle the duplicated probes, check the arrays' quality and
+     labels, then fit a linear model with limma. Think about the scan days. -->
+
+```{r}
+#| label: preprocess
+#| eval: false
+X <- as.matrix(arr[, smp$array])
+B <- backgroundCorrect.matrix(X, method = "normexp", offset = 16, verbose = FALSE)
+L <- avereps(log2(B), ID = arr$gene)                # one row per gene: duplicated probes averaged
+N <- normalizeBetweenArrays(L, method = "quantile")
+```
+
+```{r}
+#| label: qc
+#| eval: false
+round(cor(N), 3)                                   # does every array look like its own group?
+pc <- prcomp(t(N))
+plot(pc$x[, 1:2], type = "n"); text(pc$x[, 1:2], labels = colnames(N))
+table(smp$load, smp$scan_day)                      # is the design balanced?
+# if two arrays' labels are swapped, fix smp (and say why in the cleaning log)
+```
+
+```{r}
+#| label: limma
+#| eval: false
+smp$load <- factor(smp$load, levels = c("low", "high"))   # so the coefficient is high vs low
+design <- model.matrix(~ ... , data = smp)          # load, and the scan day?
+fit <- eBayes(lmFit(N, design))
+tt <- topTable(fit, coef = "loadhigh", number = Inf)
+sum(tt$adj.P.Val < 0.05)
+hist(tt$P.Value, breaks = 20)
+top <- head(tt, 20)
+cbind(round(top[, c("logFC", "AveExpr", "adj.P.Val")], 3), func = fun$func[match(rownames(top), fun$gene)])
+```
+
+## 5. Limitations and recommendation
+
+<!-- What can't the analysis know? One gene per isolate, 16S trees for close relatives, arrays
+     from only one strain, eight arrays scanned on two days, ... What should Amaya do next? -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- data.frame(
+  item = "Example",
+  decision = "Corrected",
+  reason = "Explain why"
+)
+knitr::kable(cleaning_log)
+```

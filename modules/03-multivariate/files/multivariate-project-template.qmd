@@ -1,0 +1,212 @@
+---
+title: "The suspect shipment: which drums are ours?"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 3 project template.
+  Save this file in the top folder of your plant-study project, as shipment-analysis.qmd.
+  It expects the handover files, untouched, in data-raw/shipment/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Priya and,
+  perhaps, a lawyer. Write the text for them.
+  Packages: tidyverse, MASS (comes with R) and heplots (for Box's M test).
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+theme_set(theme_minimal(base_size = 12))
+
+impurities <- c("dimer_ppm", "aldehyde_ppm", "chloride_ppm", "ester_ppm", "isomer_ppm")
+reference_raw <- read_csv("data-raw/shipment/reference_samples.csv", show_col_types = FALSE)
+questioned <- read_csv("data-raw/shipment/questioned_samples.csv", show_col_types = FALSE)
+```
+
+## Summary for Priya
+
+<!-- Write this section last, in plain words, in five or six sentences: which questioned
+     samples are consistent with our product, which aren't and whose they most likely are,
+     how sure you are (posterior probabilities and the rule's error rate), and the main
+     caveats. Careful wording: "consistent with", not "proven". -->
+
+- **Consistent with our product:** ...
+- **Not consistent with our product:** ..., most likely ...
+- **How sure:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many samples from each source? Does anything look odd? -->
+
+```{r}
+#| label: look
+reference_raw |> count(source)
+summary(reference_raw)
+questioned
+```
+
+```{r}
+#| label: by-source
+#| fig-height: 5
+reference_raw |>
+  pivot_longer(all_of(impurities), names_to = "impurity", values_to = "ppm") |>
+  ggplot(aes(x = source, y = ppm)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, height = 0, alpha = 0.6) +
+  facet_wrap(~ impurity, scales = "free_y") +
+  labs(x = NULL, y = "ppm") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+## 2. Checking the reference set
+
+<!-- The results were copied by hand from the lab notebooks. Which values can't be right?
+     Which samples don't look like their own source? Decide what to do with each one,
+     record it in the cleaning log at the end, and then rerun everything below. -->
+
+```{r}
+#| label: clean
+reference <- reference_raw
+# Your decisions, for example:
+# reference <- reference |> mutate(ester_ppm = if_else(sample_id == "...", ..., ester_ppm))   # reason: ...
+# reference <- reference |> filter(sample_id != "...")                                       # reason: ...
+reference <- reference |>
+  mutate(source = factor(source, levels = c("Our plant", "Competitor X", "Competitor Y")))
+```
+
+```{r}
+#| label: distances
+# Each sample's squared Mahalanobis distance from the mean of its own source,
+# computed without the sample itself (Lesson 2).
+loo_distance <- function(i, data) {
+  others <- data |> filter(source == data$source[i], sample_id != data$sample_id[i])
+  X <- as.matrix(others[, impurities])
+  mahalanobis(unlist(data[i, impurities]), colMeans(X), cov(X))
+}
+reference |>
+  mutate(d2 = map_dbl(seq_len(n()), loo_distance, data = reference),
+         p_value = pchisq(d2, df = 5, lower.tail = FALSE)) |>
+  arrange(desc(d2)) |>
+  select(sample_id, source, d2, p_value) |>
+  head(8)
+```
+
+```{r}
+#| label: cv-check
+# Reference samples that a cross-validated LDA assigns to a different source (Lesson 13).
+cv_check <- MASS::lda(source ~ dimer_ppm + aldehyde_ppm + chloride_ppm + ester_ppm + isomer_ppm,
+                      data = reference, CV = TRUE)
+reference |>
+  mutate(predicted = cv_check$class,
+         posterior_predicted = apply(cv_check$posterior, 1, max)) |>
+  filter(predicted != source) |>
+  select(sample_id, source, predicted, posterior_predicted)
+```
+
+## 3. Comparing the fingerprints
+
+<!-- Do the three products differ? Check the assumptions, then find out which impurities
+     tell our product apart from each competitor's. -->
+
+```{r}
+#| label: manova
+fit <- manova(cbind(dimer_ppm, aldehyde_ppm, chloride_ppm, ester_ppm, isomer_ppm) ~ source, data = reference)
+summary(fit)
+summary.aov(fit)
+```
+
+```{r}
+#| label: assumptions
+#| eval: false
+heplots::boxM(reference[, impurities], reference$source)
+# Residual normality: a Q-Q plot of each column of resid(fit) (Lesson 3).
+```
+
+```{r}
+#| label: contrasts
+#| eval: false
+# Ours against X, and ours against Y (Lesson 7). The levels are in the order
+# Our plant, Competitor X, Competitor Y.
+X <- as.matrix(reference[, impurities])
+levs <- levels(reference$source)
+means <- t(sapply(levs, function(s) colMeans(X[reference$source == s, , drop = FALSE])))
+n_i <- as.numeric(table(reference$source))
+E <- summary(fit)$SS$Residuals
+Sp <- E / (nrow(X) - length(levs))
+cc <- c(1, -1, 0)                       # ours minus X
+psi <- colSums(cc * means)
+# T² test of the contrast, and Bonferroni intervals for the five impurities: ...
+```
+
+## 4. A classification rule
+
+<!-- Fit the LDA, interpret its discriminants, and estimate its error rate honestly.
+     Compare QDA. Which rule would you defend, and why? -->
+
+```{r}
+#| label: lda
+#| eval: false
+rule <- MASS::lda(source ~ dimer_ppm + aldehyde_ppm + chloride_ppm + ester_ppm + isomer_ppm, data = reference)
+rule
+round(cor(X, predict(rule)$x), 2)   # structure correlations
+
+cv <- MASS::lda(source ~ ..., data = reference, CV = TRUE)
+table(true = reference$source, predicted = cv$class)
+mean(cv$class != reference$source)
+```
+
+## 5. The questioned samples
+
+<!-- For each sample: the most likely source, and the posterior probabilities.
+     Q6 has no chloride result: use a rule built without chloride, and check its error rate. -->
+
+```{r}
+#| label: classify
+#| eval: false
+complete <- questioned |> filter(!is.na(chloride_ppm))
+pred <- predict(rule, newdata = complete)
+tibble(sample_id = complete$sample_id, source = pred$class) |>
+  bind_cols(as_tibble(round(pred$posterior, 3)))
+
+rule_no_chloride <- MASS::lda(source ~ ..., data = reference)
+# Its cross-validated error rate: ...
+# Its verdict for Q6: ...
+```
+
+### Does each sample fit its source?
+
+<!-- LDA always picks one of the three sources. Is each sample typical of the source it was
+     assigned to? Mahalanobis distance to that source's mean, with the pooled covariance
+     matrix, and a chi-square p-value with 5 degrees of freedom (4 for Q6). -->
+
+```{r}
+#| label: typicality
+#| eval: false
+```
+
+## 6. Limitations
+
+<!-- What can't these data show? The priors, the three candidate sources, how the reference
+     samples were collected, whether the questioned samples are independent ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~sample,   ~decision,                 ~reason,
+  "Example", "Corrected, or set aside", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

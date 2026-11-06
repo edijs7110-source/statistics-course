@@ -1,0 +1,17 @@
+"loc_id","description","water_temp_C"
+"CW-01","Cooling tower basin",29
+"CW-02","Supply header",29
+"CW-03","E-101 outlet",41
+"CW-04","E-102 outlet",38
+"CW-05","E-103 outlet",44
+"CW-06","E-104 outlet",36
+"CW-07","E-105 outlet",47
+"CW-08","E-201 outlet",40
+"CW-09","E-202 outlet",34
+"CW-10","Compressor oil cooler",37
+"CW-11","Lube oil cooler",33
+"CW-12","Condenser C-301",46
+"CW-13","Condenser C-302",43
+"CW-14","Return header",39
+"CW-15","Side-stream filter",30
+"CW-16","New chiller E-401",35

@@ -1,0 +1,87 @@
+LOCUS       PL7CTG12                3000 bp    DNA     linear   BCT 05-NOV-2026
+DEFINITION  Rhodococcus sp. PL-7 contig 12, genomic fragment, kred gene.
+ACCESSION   PL7CTG12
+VERSION     PL7CTG12.1
+KEYWORDS    ketoreductase; short-chain dehydrogenase/reductase.
+SOURCE      Rhodococcus sp. PL-7
+  ORGANISM  Rhodococcus sp. PL-7
+            Bacteria; Actinomycetota; Actinomycetes; Mycobacteriales;
+            Nocardiaceae; Rhodococcus.
+COMMENT     Fictional record made for a statistics course. Isolated from the
+            aeration basin of the plant's wastewater treatment unit.
+FEATURES             Location/Qualifiers
+     source          1..3000
+                     /organism="Rhodococcus sp. PL-7"
+                     /isolation_source="activated sludge"
+     gene            301..600
+                     /locus_tag="PL7_01120"
+     CDS             301..600
+                     /locus_tag="PL7_01120"
+                     /product="hypothetical protein"
+                     /transl_table=11
+     gene            complement(1101..1859)
+                     /gene="kred"
+                     /locus_tag="PL7_01125"
+     CDS             complement(1101..1859)
+                     /gene="kred"
+                     /locus_tag="PL7_01125"
+                     /product="short-chain ketoreductase"
+                     /EC_number="1.1.1.184"
+                     /transl_table=11
+                     /translation="MCRKHPMKESGTGAASGIGLIAVDYVSQTNTLTETYSHSGQNIE
+                     ASTYLIDLEAEMHVNTDGPNECNIDGGLVLYDGLRDLALEVCIPDQNLRILTGGKVWD
+                     KFTNASATQFMYSSSGWSGTFRSETISFVFKTYFIVRTSNNAGPRISGSMYYANAKMN
+                     DGSYAASKQYLIQIHGKAYNFVLCMAKEIASAEFWVNSGIEVIPEQGMCETPMHILPS
+                     VLMFPGNSASDEVDGFVDGRGEADCFDQLTGYYS"
+ORIGIN
+        1 gctgtgggcc aacacattcg agtttcgtgt aacccgccgt tcgctgccgc cccgagcccc
+       61 catctctcca tcgaagggca cccgcaggtg ttgagcaccg ttaccgttcc cgggtggcta
+      121 ccacccaccg tttcgatacg tggtggattg ggtccccctc taccttaacc gtccacgtcc
+      181 aggcacgccg gactgatggc acaggcgaat gaaactgatg ccggataccc ttaactcgga
+      241 gtgccgcgcc gccggacggc ccatgcgcgc cttgagcaaa gaaaggttgc agcggggctc
+      301 atgcacgcgc tgtccgccga aaaccaggac agcgtcttca cttgggccct gcgcgagggg
+      361 cctgtagggg gcctcgactt cttcgccggc gacccgatgt tggacggctt cgggagcctc
+      421 ctactcgtgt tagccatcgg cgaggcgaag atcgtggtcc agagcacgaa gctcggggtc
+      481 aagttaggga tggagcacca tatctactac ctcaacgcga ggagcggcga gaagaagaag
+      541 aactacgtca cgatggagat cgtggtgcag atcgggctaa acctcttcgc tcgtcagtaa
+      601 tagcgtcacg acccgtggct tctgaccgcg cctggcggtc ttttgcgtgc tcatactgcc
+      661 atgccatagc ggcaccttga ggcccggacg gcctcgcgcg gggtacgcgg gcgggctcca
+      721 catctacacg tcgcgacgca gccttgtgtc cgtcgcggcc aaccgattta ccgccgcgta
+      781 acggggccct ggcttcactg cttgccccga ggccgcttgc agcggcgacg cgcgactgcc
+      841 acgacggctc caaggaccca acgctaacgc cctccggtgg ctacctggta gagtccaaaa
+      901 gccgccagat gggtgcgttc agggcatgag ccccatctcc gcggaacgcg ggtatccctt
+      961 ggggtcagga ggcgcggcac gaaatcgctg gtccccagcg tctgcgcccg gacggatcgg
+     1021 cccggacgtg cggcggcagg ctcgccgaag catacgctgc ccgccggcgc gttggcggcg
+     1081 ggaaaggcgc ccctgcgcgg tcacgagtag tagccggtca attggtcgaa gcagtcggcc
+     1141 tcgccccggc cgtcgacgaa gccatccacc tcgtcggagg cgctgttgcc cggaaacatc
+     1201 aacacgctgg gtaggatgtg catgggggtt tcgcacatcc cctgctcggg gatgacctct
+     1261 atgccgctat tcacccaaaa ctcggcagag gcgatttcct tagccataca caaaacgaag
+     1321 ttgtaagcct ttccgtgaat ttgtatgaga tattgcttgc tcgccgcgta gctcccatcg
+     1381 ttcatcttgg cgttagcgta gtacatcgac cccgagatcc gcgggcccgc attgttcgac
+     1441 gtccgtacga taaagtaggt cttgaagacg aagctgatgg tctccgacct gaatgtccct
+     1501 gaccaaccac tcgagctgta cataaactgg gtggctgacg cgttggtgaa cttgtcccat
+     1561 accttgcccc ccgtgaggat gcgcagattt tggtccggga tgcacacctc caaggcgagg
+     1621 tccctcaagc cgtcgtagag gactaaaccc ccgtcgatgt tgcactcgtt gggcccgtct
+     1681 gtgttcacgt gcatctcggc ttccaggtcg atcaggtacg tgctggcctc gatgttctgg
+     1741 cccgagtggg agtacgtctc ggtcaaggtg ttagtctggg aaacatagtc caccgcgatc
+     1801 aggccgattc ccgacgcggc cccggtgccg gattccttca tcgggtgctt cctgcacatt
+     1861 gtcacctcct gcgcgagttg catattcata tgattagagg ggtttgcata tcatgtgtac
+     1921 agggagcgag cgcagccacc ccgaccggcg cctcgttagc cgcgttgagg gctatctcag
+     1981 gcaccgccct cgctgtgagt gattgtacac cccaggaagg gtcgaaaacc gtgggcggac
+     2041 ccccgacgcc gcttacaagc ccccccgaac atggagacgc gcggcctctg gtgcactggg
+     2101 tttagtcgca gtatgcagga attgacaccg cagcgcagtt ggtcgacaga tcagtgggtt
+     2161 ggggcggaga caacggtgcg tcggtaaggt caaacacctg gtgggatcct agcgcgagcg
+     2221 cacccgcctg gcggggcgaa cagggacgtg catctgaccc cgcgccgctg gtctggccaa
+     2281 ctactacgca catcatctcg gcgcgatctg gagcaccacc tgcgaataac cgtacaagcc
+     2341 aggtttaaac ttccggtgag ggaggggtgg ctcaggggcg ctgctcctcg gtaccgcttg
+     2401 ggcggggcta cgactcaagg cgacttgaac agtgcgaaca gggcgtgaat ccgggactgg
+     2461 cggcgggccg ggctgataga tcgcgcccga agtggcgtac ctccggatgg tcagcagtcg
+     2521 gggagccgca aggcgacccc tgctgggatc ccagcccccg cgccccgccg cctagagctc
+     2581 ggttgggacc caatattcgt tgggctccca gtgttgggtc tccgtgaggg aggcatgtgg
+     2641 tgtggaccgg cccggcacta acgcggctcc tcgttgaccc gcggctacgc cccgggaggg
+     2701 caccgaaaca acggggaact ctatcgtacg ccggcgggtc gaccgtcgta ccagcagtga
+     2761 cagggccaag gacccaaccg gcagaggggg gagctgtgtg gagccgccgg gtgcatcgcc
+     2821 ccgagcgggg ctccgacgtg tccggccgta cgtgccattt tgcgagcgcg gccttctgtc
+     2881 gaactcagag tatggtcaac atacagtggg tgctgcatac gcggctcggt cggtgggccc
+     2941 cctgtctggg gtgagccctg ctggcgtaca gggtcgcagt cggacgcagg ataaagggtt
+//

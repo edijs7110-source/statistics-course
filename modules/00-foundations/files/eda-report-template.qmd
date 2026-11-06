@@ -1,0 +1,134 @@
+---
+title: "Exploratory data analysis: a pilot-plant reactor"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: show
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 0 project template.
+  Replace the reactor example with your own dataset and questions.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  The example expects reactor_batches.csv in a folder called "data" next to this file.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+```
+
+## Introduction
+
+<!-- Where do the data come from? Who collected them, when and how? -->
+
+The data describe 40 batches from a pilot-plant reactor: the shift that ran each batch, the
+catalyst used, the operating conditions, and the yield and purity of the product. They are
+fictional, made for this course, but they behave like real process data.
+
+## The data
+
+```{r}
+#| label: data
+batches <- read_csv("data/reactor_batches.csv")   # replace with your own file
+glimpse(batches)
+```
+
+<!-- Describe each variable you'll use: what it measures, its units, and its type
+     (numerical continuous/discrete, categorical nominal/ordinal). A small table works well. -->
+
+| Variable | Meaning | Type |
+|---|---|---|
+| `catalyst` | Which of four catalysts was used (A to D) | Categorical (nominal) |
+| `residence_min` | Residence time in the reactor, in minutes | Numerical (continuous) |
+| `alarms` | Number of process alarms during the batch | Numerical (discrete) |
+| `yield_pct` | Yield, as a percentage of the theoretical maximum | Numerical (continuous) |
+| ... | ... | ... |
+
+## Questions
+
+1. <!-- A question comparing groups, e.g. "Do the four catalysts differ in yield?" -->
+2. <!-- A question about a relationship, e.g. "How is residence time related to yield?" -->
+3. <!-- A question of your own -->
+
+## Data preparation
+
+```{r}
+#| label: missing
+colSums(is.na(batches))
+```
+
+<!-- How many values are missing, in which variables? What did you do about them, and why? -->
+
+## Exploring the data
+
+### Question 1
+
+```{r}
+#| label: q1-summary
+batches |>
+  group_by(catalyst) |>
+  summarise(
+    n = n(),
+    mean_yield = mean(yield_pct),
+    sd_yield = sd(yield_pct),
+    median_yield = median(yield_pct)
+  )
+```
+
+```{r}
+#| label: q1-plot
+#| fig-cap: "Yield by catalyst."
+ggplot(batches, aes(x = catalyst, y = yield_pct)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.5) +
+  labs(x = "Catalyst", y = "Yield (%)") +
+  theme_minimal()
+```
+
+<!-- One or two sentences: what does this show? -->
+
+### Question 2
+
+<!-- A scatterplot, a correlation, and your interpretation. -->
+
+### Question 3
+
+<!-- Your own analysis. -->
+
+## Inference
+
+### A confidence interval
+
+```{r}
+#| label: ci
+t.test(batches$yield_pct)$conf.int
+```
+
+<!-- Interpret it in a full sentence, in context. -->
+
+### A hypothesis test
+
+<!-- State H0 and HA, check the assumptions, run the test, and report the conclusion
+     together with the size of the effect. -->
+
+```{r}
+#| label: test
+a_vs_d <- filter(batches, catalyst %in% c("A", "D"))
+t.test(yield_pct ~ catalyst, data = a_vs_d)
+```
+
+## Conclusions
+
+<!-- Answer each of your three questions in plain language. -->
+
+## Limitations
+
+<!-- How were the data collected? Could the sample be biased? Is this observational data?
+     What about the missing values? What would you do next with more time or data? -->

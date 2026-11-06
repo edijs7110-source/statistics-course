@@ -1,0 +1,204 @@
+---
+title: "Phenol in the treated wastewater: is half the detection limit good enough?"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 4 project template.
+  Save this file in the top folder of your plant-study project, as wastewater-study.qmd.
+  It expects the handover files, untouched, in data-raw/wastewater/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Hana and
+  the regulator. Write the text for them.
+  Packages: tidyverse only. Everything else is base R.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+theme_set(theme_minimal(base_size = 12))
+
+raw <- read_csv("data-raw/wastewater/wastewater_2026.csv", show_col_types = FALSE)
+```
+
+## Summary for Hana
+
+<!-- Write this section last, in plain words, in five or six sentences: is half the detection
+     limit good enough for our data (for the mean? for the 95th percentile?), what should we use
+     instead, this year's estimates with their 95% intervals, the permit verdicts, and the main
+     caveats. Careful wording: "probably within the permit" is not "demonstrably within it". -->
+
+- **Is half the detection limit good enough?** ...
+- **What to use instead:** ...
+- **This year:** an annual average of ... µg/L (95% CI ... to ...), and a 95th percentile of ... µg/L (95% CI ... to ...).
+- **The permit:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many results are below the detection limit, before and after
+     July? Does any value look impossible? -->
+
+```{r}
+#| label: look
+raw |> count(lod_ugL, below_lod)
+summary(raw)
+```
+
+```{r}
+#| label: over-time
+#| fig-height: 4
+raw |>
+  mutate(shown = if_else(below_lod, lod_ugL, phenol_ugL)) |>
+  ggplot(aes(x = sample_date, y = shown)) +
+  geom_step(aes(y = lod_ugL), color = "grey60") +                 # the detection limit
+  geom_point(aes(shape = below_lod), size = 2) +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 1),
+                     labels = c("detected", "below the limit (drawn at the limit)"), name = NULL) +
+  labs(x = NULL, y = "Phenol (µg/L)") +
+  theme(legend.position = "top")
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. Then rerun everything below. -->
+
+```{r}
+#| label: clean
+wastewater <- raw
+# Your decisions, for example:
+# wastewater <- wastewater |>
+#   mutate(phenol_ugL = if_else(sample_date == as.Date("2026-..."), ..., phenol_ugL))   # reason: ...
+```
+
+## 3. The EM algorithm
+
+<!-- Lesson 10's E-step and M-step, on the log scale, with a different detection limit for each
+     censored result. Then check it against a direct maximum likelihood fit with optim(). -->
+
+```{r}
+#| label: em
+#| eval: false
+em_lognormal <- function(x, censored, lod, max_iter = 500, tol = 1e-8) {
+  y <- log(if_else(censored, lod, x))   # log concentrations (for censored results, just a placeholder)
+  L <- log(lod)                          # each result's own log detection limit
+  mu <- mean(y[!censored])
+  s <- sd(y[!censored])
+  for (i in 1:max_iter) {
+    # E-step: for each censored result, with cc = (L - mu) / s and lam = dnorm(cc) / pnorm(cc),
+    #   E[y] = mu - s * lam   and   E[y^2] = mu^2 + s^2 - s * (L + mu) * lam
+    # ...
+    # M-step: the new mu and s from the completed sums of y and y^2
+    # ...
+    # Stop when mu and s both change by less than tol
+  }
+  c(mu = mu, sigma = s, mean = exp(mu + s^2 / 2), p95 = exp(mu + qnorm(0.95) * s))
+}
+```
+
+```{r}
+#| label: check-em
+#| eval: false
+fit <- em_lognormal(wastewater$phenol_ugL, wastewater$below_lod, wastewater$lod_ugL)
+fit
+# Direct maximum likelihood with optim() (Lesson 9): detected results contribute the normal
+# density of their logs, and censored ones pnorm((L - mu) / s, log.p = TRUE). Do they agree?
+```
+
+## 4. The simulation study
+
+### The plan
+
+<!-- The ADEMP plan, written before you run anything: Aims, Data-generating mechanisms,
+     Estimands, Methods and Performance measures (Lesson 4). -->
+
+- **Aims:** ...
+- **Data-generating mechanisms:** ...
+- **Estimands:** ...
+- **Methods:** ...
+- **Performance measures:** ...
+
+### The code
+
+```{r}
+#| label: sim-functions
+#| eval: false
+lod_pattern <- wastewater$lod_ugL          # keep this year's 43 detection limits fixed
+
+simulate_year <- function(gm, sdlog) {
+  x <- rlnorm(length(lod_pattern), log(gm), sdlog)
+  tibble(x = x, censored = x < lod_pattern, lod = lod_pattern)
+}
+
+estimate_both <- function(year) {
+  half <- if_else(year$censored, year$lod / 2, year$x)
+  em <- em_lognormal(year$x, year$censored, year$lod)
+  c(mean_half = mean(half), p95_half = quantile(half, 0.95, names = FALSE),
+    mean_em = em[["mean"]], p95_em = em[["p95"]])
+}
+
+run_scenario <- function(gm, sdlog, reps) {
+  truth_mean <- gm * exp(sdlog^2 / 2)
+  truth_p95 <- gm * exp(qnorm(0.95) * sdlog)
+  estimates <- t(replicate(reps, estimate_both(simulate_year(gm, sdlog))))
+  # ... the bias and RMSE of each column, as % of the truth, with Monte Carlo standard errors
+}
+```
+
+```{r}
+#| label: run-study
+#| eval: false
+set.seed(2026)                               # once, before everything
+scenarios <- expand_grid(gm = c(11, 7, 4), sdlog = c(0.85, 1.2))
+# results <- ...
+# saveRDS(results, "simulation-results.rds")  # so the report doesn't rerun it every time
+```
+
+### The results
+
+<!-- One table (bias and RMSE with MCSEs) and one plot. Which method wins, for which estimand,
+     in which scenarios? Which scenario is closest to our data? -->
+
+```{r}
+#| label: results
+#| eval: false
+# results <- readRDS("simulation-results.rds")
+```
+
+## 5. This year's answer
+
+<!-- Estimates with the method your study supports, and 95% intervals from the parametric
+     bootstrap (and, to compare, a nonparametric bootstrap). Then the permit verdicts. -->
+
+```{r}
+#| label: bootstrap
+#| eval: false
+# Parametric bootstrap (Lesson 6): simulate 2,000 years from the fitted lognormal, with this
+# year's detection limits, and apply EM to each one.
+```
+
+## 6. Limitations
+
+<!-- What can't the study show? The lognormal assumption, independent weekly samples, the
+     scenarios you chose, the detection limits themselves ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~sample,   ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

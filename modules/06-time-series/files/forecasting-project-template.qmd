@@ -1,0 +1,168 @@
+---
+title: "The plant's electricity use: a forecast for the contract year 2026-27"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 6 project template.
+  Save this file in the top folder of your plant-study project, as electricity-forecast.qmd.
+  It expects the handover files, untouched, in data-raw/electricity/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Tomas and the
+  electricity supplier. Write the text for them.
+  Packages: tidyverse and forecast.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+library(forecast)
+theme_set(theme_minimal(base_size = 12))
+
+raw <- read_csv("data-raw/electricity/electricity_2026.csv", show_col_types = FALSE)
+cap <- 11000          # MWh per month, the contract's cap
+y_raw <- ts(raw$electricity_mwh, start = c(2015, 1), frequency = 12)
+```
+
+## Summary for Tomas
+
+<!-- Write this section last, in plain words, in five or six sentences: the forecast for the
+     contract year and its range, the total with an interval, the months at risk of going over
+     the cap and how likely, how much better this is than the spreadsheet, and the main caveats. -->
+
+- **The contract year:** ...
+- **The total:** ... MWh (95% interval ... to ...).
+- **The cap:** ...
+- **Why trust it:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? Describe the trend and the season. Is any month missing or impossible? -->
+
+```{r}
+#| label: look
+summary(raw)
+raw |> filter(is.na(electricity_mwh) | electricity_mwh > 12000)     # anything odd?
+```
+
+```{r}
+#| label: plots
+#| fig-height: 3.5
+autoplot(y_raw) +
+  geom_hline(yintercept = cap, linetype = "dashed") +
+  labs(x = NULL, y = "Electricity (MWh per month)")
+ggseasonplot(y_raw, year.labels = FALSE) +
+  labs(title = NULL, x = NULL, y = "Electricity (MWh per month)")
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. Then rerun everything below. -->
+
+```{r}
+#| label: clean
+x <- raw$electricity_mwh
+# Your decisions, for example:
+# x[...] <- ...      # reason: ...
+y <- ts(x, start = c(2015, 1), frequency = 12)
+step <- as.numeric(time(y) >= 2023 + 2 / 12)     # the compressor house, from March 2023
+```
+
+## 3. Comparing methods
+
+<!-- Fit every method to the data up to September 2024, and compare them on October 2024 to
+     September 2026: RMSE, MAPE and interval coverage. Then cross-validate the best ones. -->
+
+```{r}
+#| label: split
+#| eval: false
+train <- window(y, end = c(2024, 9))
+test <- window(y, start = c(2024, 10))
+step_train <- step[seq_along(train)]
+step_test <- step[-seq_along(train)]
+```
+
+```{r}
+#| label: compare
+#| eval: false
+f_snaive <- snaive(train, h = 24)
+f_ets <- forecast(ets(train), h = 24)
+f_trend <- forecast(tslm(train ~ trend), h = 24)                     # the spreadsheet's method
+fit_step <- auto.arima(log(train), xreg = step_train)
+f_step <- forecast(fit_step, xreg = step_test)
+# ... and a seasonal ARIMA without the step
+# Then compare: the RMSE and MAPE of each against `test` (remember exp() for the log models),
+# and the share of test months inside the 80% and 95% intervals.
+```
+
+```{r}
+#| label: cross-validation
+#| eval: false
+# tsCV() with h = 12 for the best two or three methods, on the whole series.
+# Tip: fix the ARIMA orders, so each origin refits only the coefficients.
+```
+
+## 4. The chosen model
+
+<!-- Refit the chosen method to all the data, and check it: residuals, Ljung-Box, overfitting. -->
+
+```{r}
+#| label: final-model
+#| eval: false
+fit <- Arima(log(y), order = c(...), seasonal = c(...), xreg = step, include.drift = ...)
+fit
+checkresiduals(fit)
+```
+
+## 5. The forecast
+
+<!-- October 2026 to September 2027, with 80% and 95% intervals, back on the MWh scale. Then the
+     simulated total and the cap probabilities. -->
+
+```{r}
+#| label: forecast
+#| eval: false
+fc <- forecast(fit, xreg = rep(1, 12), h = 12)
+forecast_table <- tibble(
+  month = format(seq(as.Date("2026-10-01"), by = "month", length.out = 12), "%b %Y"),
+  forecast = exp(fc$mean),
+  lo80 = exp(fc$lower[, 1]), hi80 = exp(fc$upper[, 1]),
+  lo95 = exp(fc$lower[, 2]), hi95 = exp(fc$upper[, 2])
+)
+knitr::kable(forecast_table, digits = 0)
+```
+
+```{r}
+#| label: simulate
+#| eval: false
+set.seed(2026)
+paths <- replicate(4000, exp(simulate(fit, nsim = 12, xreg = rep(1, 12), future = TRUE)))   # 12 x 4,000
+# The annual total's interval, each month's probability of exceeding the cap,
+# and the probability that at least one month does.
+```
+
+## 6. Limitations
+
+<!-- What can't the forecast know? Weather, shutdowns, new equipment, the step's size ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~month,    ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

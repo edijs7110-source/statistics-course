@@ -1,0 +1,193 @@
+---
+title: "Which crystallization batches will fail? A model for the end of seeding"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 7 project template.
+  Save this file in the top folder of your plant-study project, as batch-failure-model.qmd.
+  It expects the handover files, untouched, in data-raw/crystallization/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Ines and
+  the plant's management. Write the text for them.
+  Packages: tidyverse, glmnet, mgcv, e1071, nnet and pROC (and optionally tidymodels).
+  Don't read new_batch_results.csv until section 5.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, ggplot2 ...
+library(pROC)
+theme_set(theme_minimal(base_size = 12))
+
+batches <- read_csv("data-raw/crystallization/crystallization_batches.csv", show_col_types = FALSE)
+new_batches <- read_csv("data-raw/crystallization/new_batches.csv", show_col_types = FALSE)
+cost_rescue <- 1500    # EUR, switching a batch to the slow cooling program
+cost_rework <- 12000   # EUR, redissolving and recrystallizing a failed batch
+```
+
+## Summary for Ines
+
+<!-- Write this section last, in plain words, in five or six sentences: the model and the rule
+     ("switch a batch when ..."), what it would have saved on the 250 new batches against
+     switching none and switching all, the main drivers of failure, how it does on R3,
+     and the main caveats. -->
+
+- **The rule:** ...
+- **What it saves:** ...
+- **What drives the failures:** ...
+- **Reactor R3:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? The failure rate, overall and by reactor. Which columns would be
+     known at the end of seeding, and which wouldn't? Anything in the wrong units? -->
+
+```{r}
+#| label: look
+summary(batches)
+batches |> count(reactor, particle_test)
+```
+
+```{r}
+#| label: plots
+#| fig-height: 6
+batches |>
+  select(-batch, -start_date, -reactor, -shift) |>
+  pivot_longer(-particle_test) |>
+  ggplot(aes(value, fill = particle_test)) +
+  geom_histogram(bins = 30, position = "identity", alpha = 0.6) +
+  facet_wrap(~name, scales = "free") +
+  labs(x = NULL, y = "Batches", fill = NULL)
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. -->
+
+```{r}
+#| label: clean
+clean <- function(d) {
+  d |>
+    mutate(
+      # seed_temp_C = ...,                         # reason: ...
+      impurity_missing = as.integer(is.na(impurity_ppm)),
+      fail = as.integer(particle_test == "fail")   # (new_batches has no particle_test yet)
+    )
+}
+# train <- clean(batches) |> select(-filtration_time_h)   # reason: ...
+```
+
+## 3. Comparing methods
+
+<!-- 10-fold CV on the 1,000 batches, stratified by the outcome, with imputation and scaling
+     inside the folds. At least: main-effects logistic, lasso, kNN, SVM, neural network, and
+     a model built from process insight (an interaction, a curved term, or a GAM).
+     Report the CV AUC and log loss of each. -->
+
+```{r}
+#| label: folds
+#| eval: false
+set.seed(2026)
+fold <- integer(nrow(train))
+for (cl in 0:1) {                                  # stratified: assign folds within each class
+  idx <- which(train$fail == cl)
+  fold[idx] <- sample(rep(1:10, length.out = length(idx)))
+}
+cv_predict <- function(fit_and_predict) {          # returns a cross-validated probability for every batch
+  p <- numeric(nrow(train))
+  for (j in 1:10) p[fold == j] <- fit_and_predict(train[fold != j, ], train[fold == j, ])
+  p
+}
+```
+
+```{r}
+#| label: compare
+#| eval: false
+cv_main <- cv_predict(function(tr, te) {
+  fit <- glm(fail ~ reactor + shift + ..., family = binomial, data = tr)
+  predict(fit, te, type = "response")
+})
+# ... and the other methods
+results <- tibble(
+  method = c("logistic, main effects", "..."),
+  auc = c(as.numeric(auc(train$fail, cv_main)), ...),
+  log_loss = c(...)
+)
+knitr::kable(results, digits = 3)
+```
+
+## 4. The chosen model and its threshold
+
+<!-- Refit the chosen model to all 1,000 batches. Check its calibration (predicted against observed
+     failure rates in groups), and justify the threshold from the costs. -->
+
+```{r}
+#| label: final-model
+#| eval: false
+final <- glm(fail ~ ..., family = binomial, data = train)
+threshold <- cost_rescue / cost_rework
+```
+
+## 5. The test on new batches
+
+<!-- Only now: read the results, predict the 250 new batches, and report the AUC, the confusion
+     matrix at your threshold, and the cost against switching none and switching all. -->
+
+```{r}
+#| label: test
+#| eval: false
+results_new <- read_csv("data-raw/crystallization/new_batch_results.csv", show_col_types = FALSE)
+test <- new_batches |> left_join(results_new, by = "batch") |> clean()
+p_test <- predict(final, test, type = "response")
+flag <- p_test >= threshold
+table(switched = flag, failed = test$fail)
+c(model = cost_rescue * sum(flag) + cost_rework * sum(!flag & test$fail == 1),
+  switch_none = cost_rework * sum(test$fail),
+  switch_all = cost_rescue * nrow(test))
+```
+
+## 6. What drives the failures
+
+<!-- Explain the model in process terms: which variables, which direction, how much. Is there an
+     interaction? A best agitator speed? -->
+
+## 7. Does it work on R3?
+
+<!-- Calibration, AUC and sensitivity at your threshold, by reactor, on the new batches. -->
+
+```{r}
+#| label: fairness
+#| eval: false
+test |>
+  mutate(p = p_test) |>
+  group_by(reactor) |>
+  summarise(batches = n(), predicted = mean(p), observed = mean(fail),
+            sensitivity = mean(p[fail == 1] >= threshold))
+```
+
+## 8. Limitations
+
+<!-- What can't the model know? New raw materials, a reactor it has seen little of, drift ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~column,   ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

@@ -1,0 +1,2873 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The simplest flexible method there is: to predict a new case, find the k most similar past cases and average them. Use it to predict the melt index from one tag, then four, then twenty, and choose k by cross-validation. See why the units of the predictors suddenly matter, how irrelevant tags ruin the neighbors, and why distances stop meaning much in many dimensions. Then use it to diagnose reactor alarms.">
+
+<title>k-nearest neighbors – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">k-nearest neighbors</h1>
+<p class="subtitle lead">Predict from the most similar past cases</p>
+</div>
+
+<div>
+  <div class="description">
+    The simplest flexible method there is: to predict a new case, find the k most similar past cases and average them. Use it to predict the melt index from one tag, then four, then twenty, and choose k by cross-validation. See why the units of the predictors suddenly matter, how irrelevant tags ruin the neighbors, and why distances stop meaning much in many dimensions. Then use it to diagnose reactor alarms.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 7 · Lesson 3 of 14</span> <span class="meta-item">Week 106 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>An experienced operator, asked what the melt index is doing right now, might say: “The last time we ran at this hydrogen ratio, it was about 0.9.” That’s a prediction method, and a good one. It assumes nothing about the shape of <span class="math inline">f</span>. It just finds the most similar past cases and reports what happened then.</p>
+<p><strong><span class="math inline">k</span>-nearest neighbors</strong> (kNN) is that method, made precise. To predict at a new input <span class="math inline">x_0</span>, find the <span class="math inline">k</span> training points closest to <span class="math inline">x_0</span>, the set <span class="math inline">\mathcal{N}_0</span>, and average their responses:</p>
+<p><span class="math display">
+\hat f(x_0) = \frac{1}{k} \sum_{i \in \mathcal{N}_0} y_i .
+</span></p>
+<p>For classification, take a vote instead: predict the most common class among the <span class="math inline">k</span> neighbors. kNN is the purest non-parametric method, and it’s a useful yardstick: if a fancy model can’t beat kNN, something is wrong with it. It also shows, very clearly, a problem that every flexible method has to face.</p>
+<div class="fizz">
+<p>kNN is learning by analogy: “what happened last time things looked like this?” It’s simple enough to code in three lines, and it still teaches us something deep about high dimensions.</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>predict with kNN by hand, then with <code>FNN::knn.reg()</code></li>
+<li>choose <span class="math inline">k</span> by cross-validation, and see the bias-variance trade-off in <span class="math inline">k</span></li>
+<li>see why kNN depends on the units of the predictors, and what standardizing does</li>
+<li>watch irrelevant predictors ruin the neighbors: the curse of dimensionality</li>
+<li>classify reactor alarms with <code>class::knn()</code></li>
+</ul>
+<section id="neighbors-by-hand" class="level2">
+<h2 class="anchored" data-anchor-id="neighbors-by-hand">Neighbors by hand</h2>
+<p>The setup code reads the soft-sensor data from Lesson 2, with the logs, and lists the four chemistry tags in <code>chem</code> and all 20 tags in <code>tags</code>. It makes the same 10 folds as Lesson 2, so that the CV errors here can be compared with that lesson’s. It also reads the alarm data, for the end of the lesson.</p>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex7_3_byhand&quot;,&quot;ex7_3_knnreg&quot;,&quot;ex7_3_choosek&quot;,&quot;ex7_3_units&quot;,&quot;ex7_3_scaled&quot;,&quot;ex7_3_curse&quot;,&quot;ex7_3_concentration&quot;,&quot;ex7_3_classify&quot;,&quot;ex7_3_extrapolate&quot;,&quot;ex7_3_votes&quot;]">
+<script type="exercise-setup-ex7_3_byhand-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_knnreg-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_choosek-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_units-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_scaled-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_curse-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_concentration-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_classify-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_extrapolate-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+<script type="exercise-setup-ex7_3_votes-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4N18zX2J5aGFuZCIsImV4N18zX2tubnJlZyIsImV4N18zX2Nob29zZWsiLCJleDdfM191bml0cyIsImV4N18zX3NjYWxlZCIsImV4N18zX2N1cnNlIiwiZXg3XzNfY29uY2VudHJhdGlvbiIsImV4N18zX2NsYXNzaWZ5IiwiZXg3XzNfZXh0cmFwb2xhdGUiLCJleDdfM192b3RlcyJdLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlLCJzZXR1cCI6dHJ1ZX0sImNvZGUiOiJsaWJyYXJ5KHJlYWRyKVxubWkgPC0gcmVhZF9jc3YoXCJkYXRhL3NvZnRfc2Vuc29yLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxubWkkbG9nX21pIDwtIGxvZyhtaSRtZWx0X2luZGV4KVxubWkkbG9nX2gyIDwtIGxvZyhtaSRoMl9yYXRpbylcbmNoZW0gPC0gYyhcImxvZ19oMlwiLCBcInJlYWN0b3JfdGVtcF9DXCIsIFwiY29tb25vbWVyX3JhdGlvXCIsIFwiYzJfcHJlc3N1cmVfYmFyXCIpXG50YWdzIDwtIGMoXCJsb2dfaDJcIiwgbmFtZXMobWkpWzY6MjRdKSAgICAgICAgICAgICAgICAgICAjIGFsbCAyMCB0YWdzXG5zZXQuc2VlZCg3MDIyKVxuZm9sZCA8LSBzYW1wbGUocmVwKDE6MTAsIGxlbmd0aC5vdXQgPSA1MDApKSAgICAgICAgICAgICMgdGhlIHNhbWUgZm9sZHMgYXMgTGVzc29uIDJcbmZhdWx0cyA8LSByZWFkX2NzdihcImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2XCIsIHNob3dfY29sX3R5cGVzID0gRkFMU0UpXG5mYXVsdHMkY2F1c2UgPC0gZmFjdG9yKGZhdWx0cyRjYXVzZSkifQ==
+</script>
+</div>
+<p><strong>Your turn.</strong> The operators are about to run at a hydrogen ratio of 0.25. Find the 5 past samples whose <span class="math inline">\log(\text{H}_2)</span> is closest to <span class="math inline">\log(0.25)</span>, and predict the MI as the geometric mean of their MIs (the mean on the log scale, transformed back).</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_byhand" data-caption="Your turn · Five nearest neighbors">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRml2ZSBuZWFyZXN0IG5laWdoYm9ycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg3XzNfYnloYW5kIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJkaXN0MCA8LSBhYnMobWkkbG9nX2gyIC0gbG9nKDAuMjUpKVxubmVhcmVzdCA8LSBvcmRlcihkaXN0MClbMTpfX19fX19dXG5taVtuZWFyZXN0LCBjKFwic2FtcGxlXCIsIFwiaDJfcmF0aW9cIiwgXCJtZWx0X2luZGV4XCIpXVxuZXhwKG1lYW4obWkkbG9nX21pW25lYXJlc3RdKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_byhand">
+<p><code>order(dist0)</code> lists the samples from nearest to farthest. Take the first 5.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_byhand">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>dist0 <span class="ot">&lt;-</span> <span class="fu">abs</span>(mi<span class="sc">$</span>log_h2 <span class="sc">-</span> <span class="fu">log</span>(<span class="fl">0.25</span>))</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>nearest <span class="ot">&lt;-</span> <span class="fu">order</span>(dist0)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>mi[nearest, <span class="fu">c</span>(<span class="st">"sample"</span>, <span class="st">"h2_ratio"</span>, <span class="st">"melt_index"</span>)]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">mean</span>(mi<span class="sc">$</span>log_mi[nearest]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The five neighbors ran at hydrogen ratios of 0.228 to 0.239, all a little below 0.25, and their MIs range from 0.68 to 1.16. The prediction is 0.88. Notice that there’s no sample <em>above</em> 0.25 among them: the nearest neighbors can all lie on one side of <span class="math inline">x_0</span>, which biases the prediction toward their side. Here, that probably makes 0.88 a little low.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_byhand" data-check="true">
+<script type="exercise-check-ex7_3_byhand-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2J5aGFuZCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKGFicygucmVzdWx0IC0gMC44NzY5MDQ4ODk4NDEpIDwgMWUtOCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogYSBwcmVkaWN0ZWQgTUkgb2YgMC44OC5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFRha2UgdGhlIDUgbmVhcmVzdDogb3JkZXIoZGlzdDApWzE6NV0uXCIpXG59In0=
+</script>
+</div>
+<p><code>FNN::knn.reg(train, test, y, k)</code> does the same, for many test points at once. Its first two arguments are matrices of predictors.</p>
+<p><strong>Your turn.</strong> Write a function that computes the 10-fold CV RMSE of kNN regression on log(MI), for a given set of predictor columns and a given <span class="math inline">k</span>. Use it with <code>log_h2</code> alone and <span class="math inline">k = 5</span>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_knnreg" data-caption="Your turn · Cross-validating kNN">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQ3Jvc3MtdmFsaWRhdGluZyBrTk4iLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2tubnJlZyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiY3Zfa25uIDwtIGZ1bmN0aW9uKGNvbHMsIGspIHtcbiAgWCA8LSBhcy5tYXRyaXgobWlbY29sc10pXG4gIGVyciA8LSBudW1lcmljKG5yb3cobWkpKVxuICBmb3IgKGogaW4gMToxMCkge1xuICAgIHRyIDwtIGZvbGQgIT0galxuICAgIHByZWQgPC0gRk5OOjprbm4ucmVnKFhbdHIsICwgZHJvcCA9IEZBTFNFXSwgWFshdHIsICwgZHJvcCA9IEZBTFNFXSwgbWkkbG9nX21pW3RyXSwgayA9IF9fX19fXykkcHJlZFxuICAgIGVyclshdHJdIDwtIG1pJGxvZ19taVshdHJdIC0gcHJlZFxuICB9XG4gIHNxcnQobWVhbihlcnJeMikpXG59XG5jdl9rbm4oXCJsb2dfaDJcIiwgNSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_knnreg">
+<p>Pass the function’s argument: <code>k = k</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_knnreg">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>cv_knn <span class="ot">&lt;-</span> <span class="cf">function</span>(cols, k) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mi[cols])</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  err <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(mi))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    tr <span class="ot">&lt;-</span> fold <span class="sc">!=</span> j</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    pred <span class="ot">&lt;-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], X[<span class="sc">!</span>tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], mi<span class="sc">$</span>log_mi[tr], <span class="at">k =</span> k)<span class="sc">$</span>pred</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    err[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> mi<span class="sc">$</span>log_mi[<span class="sc">!</span>tr] <span class="sc">-</span> pred</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>(err<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cv_knn</span>(<span class="st">"log_h2"</span>, <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.230. Lesson 2’s straight line in <code>log_h2</code> had a CV RMSE of 0.217 on the same folds, so kNN with <span class="math inline">k = 5</span> is a little worse. <code>drop = FALSE</code> keeps a one-column matrix a matrix, instead of letting R turn it into a vector.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_knnreg" data-check="true">
+<script type="exercise-check-ex7_3_knnreg-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2tubnJlZyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDEgJiYgaXNUUlVFKGFicygucmVzdWx0IC0gMC4yMzAxMTc3MjA1NzUpIDwgMWUtOCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogMC4yMzAgd2l0aCA1IG5laWdoYm9ycy5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFBhc3MgayA9IGsgdG8ga25uLnJlZygpLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="choosing-k" class="level2">
+<h2 class="anchored" data-anchor-id="choosing-k">Choosing k</h2>
+<p><span class="math inline">k</span> is kNN’s flexibility dial, turned the opposite way from a polynomial’s degree. With <span class="math inline">k = 1</span>, each prediction copies a single past sample, noise and all: low bias, high variance. With large <span class="math inline">k</span>, each prediction averages many samples, some of them far from <span class="math inline">x_0</span>: low variance, but biased, because far-away samples have a different <span class="math inline">f</span>. At the extreme, <span class="math inline">k = n</span> predicts the overall mean everywhere.</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(mi<span class="sc">$</span>log_h2), <span class="fu">max</span>(mi<span class="sc">$</span>log_h2), <span class="at">length.out =</span> <span class="dv">400</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>fits <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">data.frame</span>(<span class="at">x =</span> g, <span class="at">y =</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(<span class="fu">as.matrix</span>(mi<span class="sc">$</span>log_h2), <span class="fu">as.matrix</span>(g), mi<span class="sc">$</span>log_mi, <span class="at">k =</span> <span class="dv">1</span>)<span class="sc">$</span>pred, <span class="at">k =</span> <span class="st">"k = 1"</span>),</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>              <span class="fu">data.frame</span>(<span class="at">x =</span> g, <span class="at">y =</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(<span class="fu">as.matrix</span>(mi<span class="sc">$</span>log_h2), <span class="fu">as.matrix</span>(g), mi<span class="sc">$</span>log_mi, <span class="at">k =</span> <span class="dv">30</span>)<span class="sc">$</span>pred, <span class="at">k =</span> <span class="st">"k = 30"</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(mi, <span class="fu">aes</span>(log_h2, log_mi)) <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"grey70"</span>, <span class="at">size =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> fits, <span class="fu">aes</span>(x, y), <span class="at">color =</span> <span class="st">"#C2416C"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>k) <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"log(hydrogen/ethylene ratio)"</span>, <span class="at">y =</span> <span class="st">"log(melt index)"</span>) <span class="sc">+</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="03-knn_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Two panels of log melt index against log hydrogen ratio, with the 500 samples as gray points. On the left, the kNN fit with k equals 1 is a jagged line that jumps up and down between neighboring points. On the right, the fit with k equals 30 is a smooth rising line that follows the band of points, flattening slightly at both ends." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Your turn.</strong> Find the CV RMSE with <code>log_h2</code> alone for <span class="math inline">k</span> = 1, 2, 3, 5, 8, 10, 15, 20, 30 and 50, and the best <span class="math inline">k</span>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_choosek" data-caption="Your turn · Choosing k by cross-validation">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgQ2hvb3NpbmcgayBieSBjcm9zcy12YWxpZGF0aW9uIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDdfM19jaG9vc2VrIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJjdl9rbm4gPC0gZnVuY3Rpb24oY29scywgaykge1xuICBYIDwtIGFzLm1hdHJpeChtaVtjb2xzXSlcbiAgZXJyIDwtIG51bWVyaWMobnJvdyhtaSkpXG4gIGZvciAoaiBpbiAxOjEwKSB7XG4gICAgdHIgPC0gZm9sZCAhPSBqXG4gICAgcHJlZCA8LSBGTk46Omtubi5yZWcoWFt0ciwgLCBkcm9wID0gRkFMU0VdLCBYWyF0ciwgLCBkcm9wID0gRkFMU0VdLCBtaSRsb2dfbWlbdHJdLCBrID0gaykkcHJlZFxuICAgIGVyclshdHJdIDwtIG1pJGxvZ19taVshdHJdIC0gcHJlZFxuICB9XG4gIHNxcnQobWVhbihlcnJeMikpXG59XG5rcyA8LSBjKDEsIDIsIDMsIDUsIDgsIDEwLCAxNSwgMjAsIDMwLCA1MClcbmN2IDwtIHNhcHBseShrcywgZnVuY3Rpb24oaykgY3Zfa25uKFwibG9nX2gyXCIsIF9fX19fXykpXG5yb3VuZChjdiwgNClcbmtzW3doaWNoLm1pbihjdildIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_choosek">
+<p>Each call uses that iteration’s <code>k</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_choosek">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>cv_knn <span class="ot">&lt;-</span> <span class="cf">function</span>(cols, k) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mi[cols])</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  err <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(mi))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    tr <span class="ot">&lt;-</span> fold <span class="sc">!=</span> j</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    pred <span class="ot">&lt;-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], X[<span class="sc">!</span>tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], mi<span class="sc">$</span>log_mi[tr], <span class="at">k =</span> k)<span class="sc">$</span>pred</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    err[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> mi<span class="sc">$</span>log_mi[<span class="sc">!</span>tr] <span class="sc">-</span> pred</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>(err<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>ks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">15</span>, <span class="dv">20</span>, <span class="dv">30</span>, <span class="dv">50</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ks, <span class="cf">function</span>(k) <span class="fu">cv_knn</span>(<span class="st">"log_h2"</span>, k))</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cv, <span class="dv">4</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>ks[<span class="fu">which.min</span>(cv)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The CV RMSE falls from 0.297 at <span class="math inline">k = 1</span> to 0.2145 at <span class="math inline">k = 30</span>, and rises again to 0.217 at <span class="math inline">k = 50</span>. With one predictor and 450 training samples, <span class="math inline">k</span> can be large, because 30 neighbors still lie close together. The best kNN is now slightly better than the straight line (0.217), which tells you the relationship is very nearly a straight line: kNN has to work hard to match a model that assumed the right shape.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_choosek" data-check="true">
+<script type="exercise-check-ex7_3_choosek-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2Nob29zZWsiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpc1RSVUUoYXMubnVtZXJpYygucmVzdWx0KSA9PSAzMCkgJiYgaXNUUlVFKGFicyhtaW4oZ2V0KFwiY3ZcIiwgZW52aXIgPSAuZW52aXJfcmVzdWx0KSkgLSAwLjIxNDUxMjc5OTgxMikgPCAxZS04KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBrID0gMzAgaXMgYmVzdCwgd2l0aCBhIENWIFJNU0Ugb2YgMC4yMTQ1LlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gQ2FsbCBjdl9rbm4oXFxcImxvZ19oMlxcXCIsIGspLlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="units-matter" class="level2">
+<h2 class="anchored" data-anchor-id="units-matter">Units matter</h2>
+<p>With more than one predictor, “nearest” means smallest <strong>Euclidean distance</strong>, <span class="math inline">\sqrt{\sum_j (x_{0j} - x_{ij})^2}</span>, and that adds up differences in whatever units the predictors happen to be in. A difference of 1 °C counts the same as a difference of 1 in the comonomer ratio, which is 25 times the ratio’s whole range.</p>
+<p><strong>Your turn.</strong> Cross-validate kNN with <span class="math inline">k = 8</span> on the four chemistry tags, as they are. Then express the comonomer ratio in mol% (multiply by 100), and do it again.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_units" data-caption="Your turn · The same data in other units">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIHNhbWUgZGF0YSBpbiBvdGhlciB1bml0cyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg3XzNfdW5pdHMiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImN2X2tubl9kYXRhIDwtIGZ1bmN0aW9uKGRhdGEsIGNvbHMsIGspIHtcbiAgWCA8LSBhcy5tYXRyaXgoZGF0YVtjb2xzXSlcbiAgZXJyIDwtIG51bWVyaWMobnJvdyhkYXRhKSlcbiAgZm9yIChqIGluIDE6MTApIHtcbiAgICB0ciA8LSBmb2xkICE9IGpcbiAgICBwcmVkIDwtIEZOTjo6a25uLnJlZyhYW3RyLCAsIGRyb3AgPSBGQUxTRV0sIFhbIXRyLCAsIGRyb3AgPSBGQUxTRV0sIGRhdGEkbG9nX21pW3RyXSwgayA9IGspJHByZWRcbiAgICBlcnJbIXRyXSA8LSBkYXRhJGxvZ19taVshdHJdIC0gcHJlZFxuICB9XG4gIHNxcnQobWVhbihlcnJeMikpXG59XG5taV9wY3QgPC0gbWlcbm1pX3BjdCRjb21vbm9tZXJfcmF0aW8gPC0gbWkkY29tb25vbWVyX3JhdGlvICogX19fX19fXG5jKHJhdGlvID0gY3Zfa25uX2RhdGEobWksIGNoZW0sIDgpLCBtb2xfcGN0ID0gY3Zfa25uX2RhdGEobWlfcGN0LCBjaGVtLCA4KSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_units">
+<p>A ratio of 0.05 is 5 mol%: multiply by 100.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_units">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>cv_knn_data <span class="ot">&lt;-</span> <span class="cf">function</span>(data, cols, k) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(data[cols])</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  err <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(data))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    tr <span class="ot">&lt;-</span> fold <span class="sc">!=</span> j</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    pred <span class="ot">&lt;-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], X[<span class="sc">!</span>tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], data<span class="sc">$</span>log_mi[tr], <span class="at">k =</span> k)<span class="sc">$</span>pred</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    err[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> data<span class="sc">$</span>log_mi[<span class="sc">!</span>tr] <span class="sc">-</span> pred</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>(err<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>mi_pct <span class="ot">&lt;-</span> mi</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>mi_pct<span class="sc">$</span>comonomer_ratio <span class="ot">&lt;-</span> mi<span class="sc">$</span>comonomer_ratio <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">ratio =</span> <span class="fu">cv_knn_data</span>(mi, chem, <span class="dv">8</span>), <span class="at">mol_pct =</span> <span class="fu">cv_knn_data</span>(mi_pct, chem, <span class="dv">8</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.192 with the ratio, and 0.211 with mol%: the same data and the same method give a different model, only because of the units. With the ratio, whose SD is 0.009, differences in comonomer are tiny next to differences in temperature (SD 1.1 °C), so kNN effectively ignores the comonomer. In mol%, its SD is 0.9, and it counts as much as temperature. Ignoring it happens to work better here, but by luck, not by design.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_units" data-check="true">
+<script type="exercise-check-ex7_3_units-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX3VuaXRzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gMiAmJiBpc1RSVUUoYWJzKHJbMV0gLSAwLjE5MTk5MTI5MzE2OCkgPCAxZS04KSAmJiBpc1RSVUUoYWJzKHJbMl0gLSAwLjIxMDk3MDg2ODAxMSkgPCAxZS04KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBzYW1lIGRhdGEsIGRpZmZlcmVudCB1bml0cywgZGlmZmVyZW50IG1vZGVsLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gTXVsdGlwbHkgdGhlIHJhdGlvIGJ5IDEwMC5cIilcbn0ifQ==
+</script>
+</div>
+<p>The usual fix is to <strong>standardize</strong> every predictor: subtract its mean and divide by its SD, so that each one is measured in SDs. Then the units no longer matter. But it’s a choice too: it makes every predictor <em>equally important</em> in the distance. To avoid the leakage of Lesson 2, the means and SDs should come from each fold’s training rows only.</p>
+<p><strong>Your turn.</strong> Add standardization to the CV function, using the training rows’ means and SDs, and cross-validate the four chemistry tags with <span class="math inline">k = 8</span>, in both units.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_scaled" data-caption="Your turn · Standardized neighbors">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgU3RhbmRhcmRpemVkIG5laWdoYm9ycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg3XzNfc2NhbGVkIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJjdl9rbm5fc3RkIDwtIGZ1bmN0aW9uKGRhdGEsIGNvbHMsIGspIHtcbiAgWCA8LSBhcy5tYXRyaXgoZGF0YVtjb2xzXSlcbiAgZXJyIDwtIG51bWVyaWMobnJvdyhkYXRhKSlcbiAgZm9yIChqIGluIDE6MTApIHtcbiAgICB0ciA8LSBmb2xkICE9IGpcbiAgICBtdSA8LSBjb2xNZWFucyhYW3RyLCAsIGRyb3AgPSBGQUxTRV0pXG4gICAgcyA8LSBhcHBseShYW3RyLCAsIGRyb3AgPSBGQUxTRV0sIDIsIHNkKVxuICAgIFh0ciA8LSBzY2FsZShYW3RyLCAsIGRyb3AgPSBGQUxTRV0sIGNlbnRlciA9IG11LCBzY2FsZSA9IHMpXG4gICAgWHRlIDwtIHNjYWxlKFhbIXRyLCAsIGRyb3AgPSBGQUxTRV0sIGNlbnRlciA9IG11LCBzY2FsZSA9IF9fX19fXylcbiAgICBlcnJbIXRyXSA8LSBkYXRhJGxvZ19taVshdHJdIC0gRk5OOjprbm4ucmVnKFh0ciwgWHRlLCBkYXRhJGxvZ19taVt0cl0sIGsgPSBrKSRwcmVkXG4gIH1cbiAgc3FydChtZWFuKGVycl4yKSlcbn1cbm1pX3BjdCA8LSBtaVxubWlfcGN0JGNvbW9ub21lcl9yYXRpbyA8LSBtaSRjb21vbm9tZXJfcmF0aW8gKiAxMDBcbmMocmF0aW8gPSBjdl9rbm5fc3RkKG1pLCBjaGVtLCA4KSwgbW9sX3BjdCA9IGN2X2tubl9zdGQobWlfcGN0LCBjaGVtLCA4KSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_scaled">
+<p>Scale the test rows with the training rows’ SDs, <code>s</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_scaled">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>cv_knn_std <span class="ot">&lt;-</span> <span class="cf">function</span>(data, cols, k) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(data[cols])</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  err <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(data))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    tr <span class="ot">&lt;-</span> fold <span class="sc">!=</span> j</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    mu <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    s <span class="ot">&lt;-</span> <span class="fu">apply</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="dv">2</span>, sd)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    Xtr <span class="ot">&lt;-</span> <span class="fu">scale</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">center =</span> mu, <span class="at">scale =</span> s)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    Xte <span class="ot">&lt;-</span> <span class="fu">scale</span>(X[<span class="sc">!</span>tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">center =</span> mu, <span class="at">scale =</span> s)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    err[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> data<span class="sc">$</span>log_mi[<span class="sc">!</span>tr] <span class="sc">-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(Xtr, Xte, data<span class="sc">$</span>log_mi[tr], <span class="at">k =</span> k)<span class="sc">$</span>pred</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>(err<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>mi_pct <span class="ot">&lt;-</span> mi</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>mi_pct<span class="sc">$</span>comonomer_ratio <span class="ot">&lt;-</span> mi<span class="sc">$</span>comonomer_ratio <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">ratio =</span> <span class="fu">cv_knn_std</span>(mi, chem, <span class="dv">8</span>), <span class="at">mol_pct =</span> <span class="fu">cv_knn_std</span>(mi_pct, chem, <span class="dv">8</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.227 both ways: once each predictor is measured in its own SDs, the units no longer matter. But it’s <em>worse</em> than either unscaled version, because standardizing gives the comonomer ratio a full say, and the comonomer matters much less than hydrogen. kNN has no way to learn that some predictors matter more than others. Every predictor you give it counts fully, so choosing the predictors is up to you.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_scaled" data-check="true">
+<script type="exercise-check-ex7_3_scaled-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX3NjYWxlZCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiciA8LSB0cnlDYXRjaChhcy5udW1lcmljKC5yZXN1bHQpLCBlcnJvciA9IGZ1bmN0aW9uKGUpIE5VTEwpXG5pZiAobGVuZ3RoKHIpID09IDIgJiYgaXNUUlVFKGFicyhyWzFdIC0gMC4yMjY4ODc5MDEyMzMpIDwgMWUtOCkgJiYgaXNUUlVFKGFicyhyWzFdIC0gclsyXSkgPCAxZS04KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBzdGFuZGFyZGl6ZWQsIHRoZSB1bml0cyBubyBsb25nZXIgbWF0dGVyLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gU2NhbGUgdGhlIHRlc3Qgcm93cyB3aXRoIHMuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="the-curse-of-dimensionality" class="level2">
+<h2 class="anchored" data-anchor-id="the-curse-of-dimensionality">The curse of dimensionality</h2>
+<p>Standardizing gave the comonomer ratio an equal say, and it hurt, because the comonomer matters much less than hydrogen. Now imagine giving an equal say to 16 tags that don’t matter at all.</p>
+<p><strong>Your turn.</strong> Compare standardized kNN with <span class="math inline">k = 10</span> on the four chemistry tags and on all 20 tags.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_curse" data-caption="Your turn · Twenty tags">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVHdlbnR5IHRhZ3MiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2N1cnNlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJjdl9rbm5fc3RkIDwtIGZ1bmN0aW9uKGRhdGEsIGNvbHMsIGspIHtcbiAgWCA8LSBhcy5tYXRyaXgoZGF0YVtjb2xzXSlcbiAgZXJyIDwtIG51bWVyaWMobnJvdyhkYXRhKSlcbiAgZm9yIChqIGluIDE6MTApIHtcbiAgICB0ciA8LSBmb2xkICE9IGpcbiAgICBtdSA8LSBjb2xNZWFucyhYW3RyLCAsIGRyb3AgPSBGQUxTRV0pXG4gICAgcyA8LSBhcHBseShYW3RyLCAsIGRyb3AgPSBGQUxTRV0sIDIsIHNkKVxuICAgIFh0ciA8LSBzY2FsZShYW3RyLCAsIGRyb3AgPSBGQUxTRV0sIGNlbnRlciA9IG11LCBzY2FsZSA9IHMpXG4gICAgWHRlIDwtIHNjYWxlKFhbIXRyLCAsIGRyb3AgPSBGQUxTRV0sIGNlbnRlciA9IG11LCBzY2FsZSA9IHMpXG4gICAgZXJyWyF0cl0gPC0gZGF0YSRsb2dfbWlbIXRyXSAtIEZOTjo6a25uLnJlZyhYdHIsIFh0ZSwgZGF0YSRsb2dfbWlbdHJdLCBrID0gaykkcHJlZFxuICB9XG4gIHNxcnQobWVhbihlcnJeMikpXG59XG5jKGNoZW1pc3RyeSA9IGN2X2tubl9zdGQobWksIGNoZW0sIDEwKSwgYWxsX3RhZ3MgPSBjdl9rbm5fc3RkKG1pLCBfX19fX18sIDEwKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_curse">
+<p>All 20 tags are in <code>tags</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_curse">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>cv_knn_std <span class="ot">&lt;-</span> <span class="cf">function</span>(data, cols, k) {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(data[cols])</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  err <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(data))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    tr <span class="ot">&lt;-</span> fold <span class="sc">!=</span> j</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    mu <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    s <span class="ot">&lt;-</span> <span class="fu">apply</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="dv">2</span>, sd)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    Xtr <span class="ot">&lt;-</span> <span class="fu">scale</span>(X[tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">center =</span> mu, <span class="at">scale =</span> s)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    Xte <span class="ot">&lt;-</span> <span class="fu">scale</span>(X[<span class="sc">!</span>tr, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">center =</span> mu, <span class="at">scale =</span> s)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    err[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> data<span class="sc">$</span>log_mi[<span class="sc">!</span>tr] <span class="sc">-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(Xtr, Xte, data<span class="sc">$</span>log_mi[tr], <span class="at">k =</span> k)<span class="sc">$</span>pred</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sqrt</span>(<span class="fu">mean</span>(err<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">chemistry =</span> <span class="fu">cv_knn_std</span>(mi, chem, <span class="dv">10</span>), <span class="at">all_tags =</span> <span class="fu">cv_knn_std</span>(mi, tags, <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.229 with the four chemistry tags, and 0.509 with all 20: more than twice the error, and much worse than hydrogen alone (0.2145). The best <span class="math inline">k</span> with 20 tags, 5 to 10, doesn’t help: it’s still above 0.5. Compare Lesson 2, where adding the same 16 tags to a <em>linear</em> model cost almost nothing (0.170 to 0.174): least squares can give an irrelevant tag a coefficient near zero, but kNN can’t ignore anything. Every tag counts fully in every distance, so with 20 tags, the “nearest” samples are mostly the ones that happen to match on 16 irrelevant numbers.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_curse" data-check="true">
+<script type="exercise-check-ex7_3_curse-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2N1cnNlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gMiAmJiBpc1RSVUUoYWJzKHJbMl0gLSAwLjUwODc1NTM3MjkzMSkgPCAxZS04KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiAyMCB0YWdzIG1vcmUgdGhhbiBkb3VibGUgdGhlIGVycm9yLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVXNlIHRhZ3MgZm9yIGFsbCAyMC5cIilcbn0ifQ==
+</script>
+</div>
+<p>There’s a deeper problem, even when every predictor matters. In many dimensions, everything is far from everything. To capture 10% of uniformly spread data in a neighborhood, you need 10% of the range of one predictor, but <span class="math inline">0.1^{1/10} = 79\%</span> of the range of each of ten predictors. “Local” stops being local. This is the <strong>curse of dimensionality</strong>, and it hits every method that relies on nearness.</p>
+<p><strong>Your turn.</strong> Simulate 500 points spread uniformly in <span class="math inline">p</span> dimensions, and find the ratio of the nearest to the farthest distance from the first point to the others, for <span class="math inline">p = 2</span> and <span class="math inline">p = 100</span>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_concentration" data-caption="Your turn · Distances in many dimensions">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRGlzdGFuY2VzIGluIG1hbnkgZGltZW5zaW9ucyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg3XzNfY29uY2VudHJhdGlvbiIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoic2V0LnNlZWQoNzAzMylcbnJhdGlvIDwtIHNhcHBseShjKDIsIDEwMCksIGZ1bmN0aW9uKHApIHtcbiAgWCA8LSBtYXRyaXgocnVuaWYoNTAwICogcCksIG5yb3cgPSA1MDApXG4gIGQgPC0gc3FydChjb2xTdW1zKCh0KFhbLTEsIF0pIC0gWFsxLCBdKV4yKSkgICAgICMgZGlzdGFuY2VzIGZyb20gcG9pbnQgMSB0byB0aGUgb3RoZXJzXG4gIG1pbihkKSAvIF9fX19fXyhkKVxufSlcbnJhdGlvIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_concentration">
+<p>Divide the nearest distance by the farthest: <code>max(d)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_concentration">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7033</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ratio <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">100</span>), <span class="cf">function</span>(p) {</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">500</span> <span class="sc">*</span> p), <span class="at">nrow =</span> <span class="dv">500</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">colSums</span>((<span class="fu">t</span>(X[<span class="sc">-</span><span class="dv">1</span>, ]) <span class="sc">-</span> X[<span class="dv">1</span>, ])<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">min</span>(d) <span class="sc">/</span> <span class="fu">max</span>(d)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>ratio</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>0.012 in 2 dimensions: the nearest point is 90 times closer than the farthest. In 100 dimensions, 0.70: the nearest of 499 random points is 70% as far away as the farthest. When all the distances are about the same, “nearest” means very little.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_concentration" data-check="true">
+<script type="exercise-check-ex7_3_concentration-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2NvbmNlbnRyYXRpb24iLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InIgPC0gdHJ5Q2F0Y2goYXMubnVtZXJpYygucmVzdWx0KSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxuaWYgKGxlbmd0aChyKSA9PSAyICYmIGlzVFJVRShhYnMoclsxXSAtIDAuMDExNjA0NjE5Njg1NCkgPCAxZS04KSAmJiBpc1RSVUUoYWJzKHJbMl0gLSAwLjcwMDUxNjc5MjI2NikgPCAxZS04KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBpbiAxMDAgZGltZW5zaW9ucywgdGhlIG5lYXJlc3QgcG9pbnQgaXMgYWxtb3N0IGFzIGZhciBhcyB0aGUgZmFydGhlc3QuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBEaXZpZGUgYnkgbWF4KGQpLlwiKVxufSJ9
+</script>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Go deeper: why distances concentrate
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>For two independent points uniform on <span class="math inline">[0, 1]^p</span>, the squared distance is a sum of <span class="math inline">p</span> independent terms <span class="math inline">(u_j - v_j)^2</span>, each with mean <span class="math inline">1/6</span> and variance <span class="math inline">7/180</span>. So <span class="math inline">E\|u - v\|^2 = p/6</span>, and its standard deviation is <span class="math inline">\sqrt{7p/180}</span>. The relative spread of the squared distance, <span class="math inline">\sqrt{7p/180}\,/\,(p/6) \approx 1.18/\sqrt{p}</span>, shrinks like <span class="math inline">1/\sqrt p</span>: with <span class="math inline">p = 100</span>, almost every squared distance is within about 12% of <span class="math inline">p/6</span>. Beyer and colleagues (“When Is ‘Nearest Neighbor’ Meaningful?”, 1999) showed that this happens for a broad class of distributions, not only uniform ones. Real data escape the worst of it when their predictors are correlated, so that the data live near a low-dimensional surface. That’s what Lesson 12’s principal components exploit.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="knn-for-classification" class="level2">
+<h2 class="anchored" data-anchor-id="knn-for-classification">kNN for classification</h2>
+<p>For a categorical response, kNN takes a vote among the <span class="math inline">k</span> neighbors, and the share of the votes for each class is an estimate of <span class="math inline">P(Y = \text{class} \mid x_0)</span>. <code>class::knn(train, test, cl, k)</code> returns the winning class for each test row.</p>
+<p>The alarm data hold 800 high-temperature alarms on a reactor, each summarized by six measurements over the following 10 minutes, and labeled with the cause the engineers found afterwards: normal (a false alarm from a load change), loss of cooling, a feed upset, or a sticking control valve. Lessons 4 and 5 model them properly. Here, they test kNN.</p>
+<p><strong>Your turn.</strong> Cross-validate kNN with <span class="math inline">k = 9</span> on the six standardized measurements, and find the error rate.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_classify" data-caption="Your turn · Diagnosing alarms by their neighbors">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRGlhZ25vc2luZyBhbGFybXMgYnkgdGhlaXIgbmVpZ2hib3JzIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDdfM19jbGFzc2lmeSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoidmFycyA8LSBjKFwidGVtcF9kZXZfQ1wiLCBcInByZXNzdXJlX2Rldl9iYXJcIiwgXCJjb29sYW50X2R0X0NcIiwgXCJmZWVkX2Rldl9wY3RcIiwgXCJ2YWx2ZV9wb3NfcGN0XCIsIFwidmFsdmVfc2RfcGN0XCIpXG5YIDwtIGFzLm1hdHJpeChmYXVsdHNbdmFyc10pXG5zZXQuc2VlZCg3MDM0KVxuZmZvbGQgPC0gc2FtcGxlKHJlcCgxOjEwLCBsZW5ndGgub3V0ID0gbnJvdyhmYXVsdHMpKSlcbnByZWQgPC0gZmFjdG9yKHJlcChOQSwgbnJvdyhmYXVsdHMpKSwgbGV2ZWxzID0gbGV2ZWxzKGZhdWx0cyRjYXVzZSkpXG5zZXQuc2VlZCg3MDM1KVxuZm9yIChqIGluIDE6MTApIHtcbiAgdHIgPC0gZmZvbGQgIT0galxuICBtdSA8LSBjb2xNZWFucyhYW3RyLCBdKVxuICBzIDwtIGFwcGx5KFhbdHIsIF0sIDIsIHNkKVxuICBwcmVkWyF0cl0gPC0gY2xhc3M6OmtubihzY2FsZShYW3RyLCBdLCBtdSwgcyksIHNjYWxlKFhbIXRyLCBdLCBtdSwgcyksIGZhdWx0cyRjYXVzZVt0cl0sIGsgPSBfX19fX18pXG59XG5tZWFuKHByZWQgIT0gZmF1bHRzJGNhdXNlKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_classify">
+<p>Use 9 neighbors. The second <code>set.seed()</code> is there because <code>knn()</code> breaks ties at random.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_classify">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"temp_dev_C"</span>, <span class="st">"pressure_dev_bar"</span>, <span class="st">"coolant_dt_C"</span>, <span class="st">"feed_dev_pct"</span>, <span class="st">"valve_pos_pct"</span>, <span class="st">"valve_sd_pct"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(faults[vars])</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7034</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ffold <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">length.out =</span> <span class="fu">nrow</span>(faults)))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">nrow</span>(faults)), <span class="at">levels =</span> <span class="fu">levels</span>(faults<span class="sc">$</span>cause))</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7035</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  tr <span class="ot">&lt;-</span> ffold <span class="sc">!=</span> j</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(X[tr, ])</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">apply</span>(X[tr, ], <span class="dv">2</span>, sd)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  pred[<span class="sc">!</span>tr] <span class="ot">&lt;-</span> class<span class="sc">::</span><span class="fu">knn</span>(<span class="fu">scale</span>(X[tr, ], mu, s), <span class="fu">scale</span>(X[<span class="sc">!</span>tr, ], mu, s), faults<span class="sc">$</span>cause[tr], <span class="at">k =</span> <span class="dv">9</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(pred <span class="sc">!=</span> faults<span class="sc">$</span>cause)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>20.1% of the alarms are misdiagnosed. The CV error is between 19% and 21% for any <span class="math inline">k</span> from 5 to 15, and it rises on both sides: 26% at <span class="math inline">k = 1</span>, and 24% at <span class="math inline">k = 60</span>. Half the alarms are normal, so always guessing “normal” would be wrong 50% of the time: kNN has learned a lot. Lessons 4 and 5 will beat it, with models that use the shape of each class.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_classify" data-check="true">
+<script type="exercise-check-ex7_3_classify-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2NsYXNzaWZ5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXMubnVtZXJpYygucmVzdWx0KSAmJiBsZW5ndGgoLnJlc3VsdCkgPT0gMSAmJiBpc1RSVUUoYWJzKC5yZXN1bHQgLSAwLjIwMTI1KSA8IDFlLTkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IDIwLjElIG1pc2RpYWdub3NlZCwgd2l0aCA5IG5laWdoYm9ycy5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSBrID0gOS5cIilcbn0ifQ==
+</script>
+</div>
+<p>Here’s what kNN’s decision regions look like, with just two of the measurements, the temperature deviation and the valve’s variability:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">scale</span>(faults[<span class="fu">c</span>(<span class="st">"temp_dev_C"</span>, <span class="st">"valve_sd_pct"</span>)])</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>grid2 <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">temp_dev_C =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">2.5</span>, <span class="fl">4.5</span>, <span class="at">length.out =</span> <span class="dv">150</span>), <span class="at">valve_sd_pct =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">8</span>, <span class="at">length.out =</span> <span class="dv">150</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>zg <span class="ot">&lt;-</span> <span class="fu">scale</span>(grid2, <span class="fu">attr</span>(z, <span class="st">"scaled:center"</span>), <span class="fu">attr</span>(z, <span class="st">"scaled:scale"</span>))</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>regions <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">cbind</span>(grid2, <span class="at">cause =</span> class<span class="sc">::</span><span class="fu">knn</span>(z, zg, faults<span class="sc">$</span>cause, <span class="at">k =</span> <span class="dv">1</span>), <span class="at">k =</span> <span class="st">"k = 1"</span>),</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">cbind</span>(grid2, <span class="at">cause =</span> class<span class="sc">::</span><span class="fu">knn</span>(z, zg, faults<span class="sc">$</span>cause, <span class="at">k =</span> <span class="dv">25</span>), <span class="at">k =</span> <span class="st">"k = 25"</span>))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">normal =</span> <span class="st">"grey55"</span>, <span class="at">cooling_loss =</span> <span class="st">"#2a78d6"</span>, <span class="at">feed_upset =</span> <span class="st">"#1baf7a"</span>, <span class="at">sticking_valve =</span> <span class="st">"#C2416C"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(regions, <span class="fu">aes</span>(temp_dev_C, valve_sd_pct)) <span class="sc">+</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="fu">aes</span>(<span class="at">fill =</span> cause), <span class="at">alpha =</span> <span class="fl">0.35</span>) <span class="sc">+</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> faults, <span class="fu">aes</span>(<span class="at">color =</span> cause), <span class="at">size =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> cols, <span class="at">name =</span> <span class="st">"Cause"</span>) <span class="sc">+</span> <span class="fu">scale_color_manual</span>(<span class="at">values =</span> cols, <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>k) <span class="sc">+</span> <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">2.5</span>, <span class="fl">4.5</span>), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">8</span>), <span class="at">expand =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Temperature deviation (°C)"</span>, <span class="at">y =</span> <span class="st">"Valve position SD (%)"</span>) <span class="sc">+</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="03-knn_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Two panels showing kNN decision regions for the alarm causes, using temperature deviation on the horizontal axis and the valve's standard deviation on the vertical axis. With k equals 1, on the left, the regions are a patchwork of small islands, with many specks of one class inside another. With k equals 25, on the right, the regions are smooth: sticking valve at the top, where the valve's standard deviation is above about 2.5 to 3, normal at the bottom left, and loss of cooling at the bottom right, with only slivers of feed upset between them." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>With <span class="math inline">k = 1</span>, every alarm gets its own little island: the boundary is overfitted to the training data. With <span class="math inline">k = 25</span>, the regions are smooth and sensible. With only these two measurements, the CV error is much higher, about 33% at its best (<span class="math inline">k = 25</span>): loss of cooling and feed upsets overlap on these two axes, and only the other measurements tell them apart.</p>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · No extrapolation.</strong> The highest hydrogen ratio in the data is 2.89. Predict log(MI) at a ratio of 4 with kNN (<span class="math inline">k = 30</span>, on <code>log_h2</code> alone) and with the straight line <code>lm(log_mi ~ log_h2)</code>, both fitted to all the data. Transform both back to the MI scale.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_extrapolate" data-caption="Challenge · Beyond the data">
+<div>
+<div id="webr-18" class="exercise-cell">
+
+</div>
+<script type="webr-18-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgQmV5b25kIHRoZSBkYXRhIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDdfM19leHRyYXBvbGF0ZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoieF9uZXcgPC0gbG9nKDQpXG5rbm5fcHJlZCA8LSBGTk46Omtubi5yZWcoYXMubWF0cml4KG1pJGxvZ19oMiksIGFzLm1hdHJpeCh4X25ldyksIG1pJGxvZ19taSwgayA9IDMwKSRwcmVkXG5sbV9wcmVkIDwtIHByZWRpY3QobG0obG9nX21pIH4gbG9nX2gyLCBkYXRhID0gbWkpLCBkYXRhLmZyYW1lKGxvZ19oMiA9IF9fX19fXykpXG5leHAoYyhrbm4gPSBrbm5fcHJlZCwgbGluZSA9IHVubmFtZShsbV9wcmVkKSkpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_extrapolate">
+<p>Predict the line at <code>x_new</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_extrapolate">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>x_new <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="dv">4</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>knn_pred <span class="ot">&lt;-</span> FNN<span class="sc">::</span><span class="fu">knn.reg</span>(<span class="fu">as.matrix</span>(mi<span class="sc">$</span>log_h2), <span class="fu">as.matrix</span>(x_new), mi<span class="sc">$</span>log_mi, <span class="at">k =</span> <span class="dv">30</span>)<span class="sc">$</span>pred</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>lm_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(<span class="fu">lm</span>(log_mi <span class="sc">~</span> log_h2, <span class="at">data =</span> mi), <span class="fu">data.frame</span>(<span class="at">log_h2 =</span> x_new))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">c</span>(<span class="at">knn =</span> knn_pred, <span class="at">line =</span> <span class="fu">unname</span>(lm_pred)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>kNN predicts an MI of 11.8, and the line 17.3. The 30 nearest neighbors of a ratio of 4 are the 30 samples with the highest ratios, all below 2.9, so kNN predicts about what they had. The line carries the trend on. If the chemistry holds, the line is right and kNN is badly low; if something new happens at a ratio of 4, neither knows. kNN’s predictions are always averages of responses it has seen, so they can never leave the range of the data. That’s a safety feature and a limitation: a soft sensor built on kNN can’t warn you about a grade you’ve never made.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_extrapolate" data-check="true">
+<script type="exercise-check-ex7_3_extrapolate-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX2V4dHJhcG9sYXRlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLm51bWVyaWMoLnJlc3VsdCksIGVycm9yID0gZnVuY3Rpb24oZSkgTlVMTClcbmlmIChsZW5ndGgocikgPT0gMiAmJiBpc1RSVUUoYWJzKHJbMV0gLSAxMS43ODU4NDM0Mzc0KSA8IDFlLTgpICYmIGlzVFJVRShhYnMoclsyXSAtIDE3LjM0Mzc2MTcyNTMpIDwgMWUtOCkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDoga05OIGNhbid0IHByZWRpY3QgYmV5b25kIHRoZSBkYXRhIGl0IGhhcy5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFByZWRpY3QgdGhlIGxpbmUgYXQgbG9nX2gyID0geF9uZXcuXCIpXG59In0=
+</script>
+</div>
+<p><strong>Challenge 2 · The votes.</strong> With <code>prob = TRUE</code>, <code>class::knn()</code> also returns the share of votes for the winning class. Fit kNN with <span class="math inline">k = 9</span> to all the alarms but the first, on the six standardized measurements, and classify the first. What’s its predicted cause, and what share of the 9 neighbors voted for it?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_votes" data-caption="Challenge · How sure is the vote?">
+<div>
+<div id="webr-20" class="exercise-cell">
+
+</div>
+<script type="webr-20-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgSG93IHN1cmUgaXMgdGhlIHZvdGU/IiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDdfM192b3RlcyIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoidmFycyA8LSBjKFwidGVtcF9kZXZfQ1wiLCBcInByZXNzdXJlX2Rldl9iYXJcIiwgXCJjb29sYW50X2R0X0NcIiwgXCJmZWVkX2Rldl9wY3RcIiwgXCJ2YWx2ZV9wb3NfcGN0XCIsIFwidmFsdmVfc2RfcGN0XCIpXG5aIDwtIHNjYWxlKGFzLm1hdHJpeChmYXVsdHNbdmFyc10pKVxuc2V0LnNlZWQoNzAzNilcbnAxIDwtIGNsYXNzOjprbm4oWlstMSwgXSwgWlsxLCAsIGRyb3AgPSBGQUxTRV0sIGZhdWx0cyRjYXVzZVstMV0sIGsgPSA5LCBwcm9iID0gX19fX19fKVxuYyhhcy5jaGFyYWN0ZXIocDEpLCByb3VuZChhdHRyKHAxLCBcInByb2JcIiksIDMpLCBhcy5jaGFyYWN0ZXIoZmF1bHRzJGNhdXNlWzFdKSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex7_3_votes">
+<p>Ask for the vote shares with <code>prob = TRUE</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex7_3_votes">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"temp_dev_C"</span>, <span class="st">"pressure_dev_bar"</span>, <span class="st">"coolant_dt_C"</span>, <span class="st">"feed_dev_pct"</span>, <span class="st">"valve_pos_pct"</span>, <span class="st">"valve_sd_pct"</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">scale</span>(<span class="fu">as.matrix</span>(faults[vars]))</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7036</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> class<span class="sc">::</span><span class="fu">knn</span>(Z[<span class="sc">-</span><span class="dv">1</span>, ], Z[<span class="dv">1</span>, , <span class="at">drop =</span> <span class="cn">FALSE</span>], faults<span class="sc">$</span>cause[<span class="sc">-</span><span class="dv">1</span>], <span class="at">k =</span> <span class="dv">9</span>, <span class="at">prob =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="fu">as.character</span>(p1), <span class="fu">round</span>(<span class="fu">attr</span>(p1, <span class="st">"prob"</span>), <span class="dv">3</span>), <span class="fu">as.character</span>(faults<span class="sc">$</span>cause[<span class="dv">1</span>]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>kNN says “normal”, with 6 of the 9 votes (0.667), but the engineers found that alarm A001 was a loss of cooling. Its measurements are borderline: a temperature 1.2 °C high, a coolant temperature rise of 7.5 °C (normal runs about 8, and a cooling loss about 6) and the valve 63% open. The vote share is a rough probability: 0.667 says that this diagnosis is far from sure, and an alarm like this one deserves a second look. Lessons 4 to 6 build classifiers whose probabilities are better calibrated.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex7_3_votes" data-check="true">
+<script type="exercise-check-ex7_3_votes-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4N18zX3ZvdGVzIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyIDwtIHRyeUNhdGNoKGFzLmNoYXJhY3RlcigucmVzdWx0KSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxuaWYgKGxlbmd0aChyKSA9PSAzICYmIGlkZW50aWNhbChyLCBjKFwibm9ybWFsXCIsIFwiMC42NjdcIiwgXCJjb29saW5nX2xvc3NcIikpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IHRoZSB2b3RlIHNoYXJlIGlzIGtOTidzIGVzdGltYXRlIG9mIHRoZSBjbGFzcyBwcm9iYWJpbGl0eS5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIFVzZSBwcm9iID0gVFJVRS5cIilcbn0ifQ==
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> What does kNN regression predict at a new point?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The value of a fitted line there</label></li>
+<li><label><input type="checkbox" checked="">The average response of the <span class="math inline">k</span> nearest training points</label></li>
+<li><label><input type="checkbox">The response of the single nearest point, always</label></li>
+</ul>
+<div class="explain">
+<p>With <span class="math inline">k = 1</span>, it’s the nearest point’s response. With larger <span class="math inline">k</span>, an average.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> How does increasing <span class="math inline">k</span> change the bias and variance?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Both increase</label></li>
+<li><label><input type="checkbox" checked="">Variance falls and bias rises</label></li>
+<li><label><input type="checkbox">Bias falls and variance rises</label></li>
+</ul>
+<div class="explain">
+<p>Larger <span class="math inline">k</span> averages more points, some farther away. <span class="math inline">k = 1</span> is the most flexible.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> Why standardize the predictors before kNN?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">It makes the model linear</label></li>
+<li><label><input type="checkbox" checked="">Otherwise the distances depend on the arbitrary units of the predictors</label></li>
+<li><label><input type="checkbox">kNN can’t handle negative numbers</label></li>
+</ul>
+<div class="explain">
+<p>Standardizing makes each predictor count equally, which is itself a choice.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> Adding 16 irrelevant tags hardly hurt the linear model but doubled kNN’s error. Why?</p>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="">Least squares can give an irrelevant tag a coefficient near zero, but kNN weights every tag fully in every distance</label></li>
+<li><label><input type="checkbox">kNN can’t use more than 4 predictors</label></li>
+<li><label><input type="checkbox">The linear model was overfitting</label></li>
+</ul>
+<div class="explain">
+<p>That’s one face of the curse of dimensionality.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> What happens to distances between random points as the number of dimensions grows?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">They become more varied</label></li>
+<li><label><input type="checkbox" checked="">They become nearly equal, so the nearest point is almost as far as the farthest</label></li>
+<li><label><input type="checkbox">They shrink to zero</label></li>
+</ul>
+<div class="explain">
+<p>In 100 dimensions, the ratio of nearest to farthest distance was about 0.7.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> What does kNN predict far outside the range of the training data?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">An extrapolation of the trend</label></li>
+<li><label><input type="checkbox" checked="">The average of the training points nearest the edge</label></li>
+<li><label><input type="checkbox">An error</label></li>
+</ul>
+<div class="explain">
+<p>Its predictions are always averages of observed responses, so it can’t go beyond them.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You’ve met the simplest flexible method, and the problem that haunts all of them. Here’s what you’ve learned:</p>
+<ul>
+<li><strong>kNN</strong> predicts the average of the <span class="math inline">k</span> nearest training responses, or their majority class.</li>
+<li><strong><span class="math inline">k</span> is the flexibility dial:</strong> small <span class="math inline">k</span> overfits, large <span class="math inline">k</span> oversmooths. Cross-validation chose <span class="math inline">k = 30</span> for the melt index on hydrogen alone, with a CV RMSE of 0.2145.</li>
+<li><strong>Units matter:</strong> distances add up the predictors’ units. Standardizing (inside each fold) removes that, but it gives every predictor an equal say.</li>
+<li><strong>The curse of dimensionality:</strong> 16 irrelevant tags doubled kNN’s error, to 0.509, and in 100 dimensions, the nearest point is almost as far as the farthest.</li>
+<li><strong>kNN classification</strong> misdiagnosed 20.1% of the reactor alarms, with <span class="math inline">k = 9</span>. Its vote shares estimate the class probabilities.</li>
+<li><strong>kNN can’t extrapolate.</strong> Its predictions are always averages of observed values.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Download <a href="data/soft_sensor.csv">soft_sensor.csv</a> and <a href="data/process_faults.csv">process_faults.csv</a> into your project’s <code>data-raw/</code> folder, and install FNN.</p>
+<ol type="1">
+<li><strong>Weighting by importance.</strong> Standardize the four chemistry tags, then multiply each one by the size of its effect in Lesson 2’s chemistry model (its coefficient times its SD). Does kNN do better with these weighted distances?</li>
+<li><strong>Adding noise tags one at a time.</strong> Add the 16 irrelevant tags to the chemistry tags one by one, and plot kNN’s CV RMSE against the number of tags.</li>
+<li><strong>Plot the curse.</strong> Repeat the distance simulation for <span class="math inline">p</span> = 1, 2, 5, 10, 20, 50, 100 and 500, and plot the nearest-to-farthest ratio against <span class="math inline">p</span>.</li>
+<li><strong>The confusion matrix.</strong> Make <code>table(pred, faults$cause)</code> for the cross-validated kNN predictions. Which causes does kNN confuse most?</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt><span class="math inline">k</span>-nearest neighbors (kNN)</dt>
+<dd>
+A method that predicts from the <span class="math inline">k</span> training points closest to the new point: their average response, or their majority class.
+</dd>
+<dt>Euclidean distance</dt>
+<dd>
+The straight-line distance between two points, <span class="math inline">\sqrt{\sum_j (x_j - z_j)^2}</span>.
+</dd>
+<dt>Standardizing</dt>
+<dd>
+Subtracting a variable’s mean and dividing by its standard deviation, so that it’s measured in standard deviations.
+</dd>
+<dt>Curse of dimensionality</dt>
+<dd>
+The ways that data become sparse, and distances less informative, as the number of dimensions grows.
+</dd>
+<dt>Decision boundary</dt>
+<dd>
+The boundary between the regions of input space that a classifier assigns to different classes.
+</dd>
+<dt>Extrapolation</dt>
+<dd>
+Predicting outside the range of the training data.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>James, Witten, Hastie and Tibshirani, <a href="https://www.statlearning.com/"><em>An Introduction to Statistical Learning</em></a> (2nd edition), section 2.2.3 (kNN classification) and section 3.5 (kNN regression against linear regression, with the curse of dimensionality).</li>
+<li>Hastie, Tibshirani and Friedman, <a href="https://hastie.su.domains/ElemStatLearn/"><em>The Elements of Statistical Learning</em></a>, sections 2.3 and 2.5, “Local Methods in High Dimensions”.</li>
+<li>Kevin Beyer, Jonathan Goldstein, Raghu Ramakrishnan and Uri Shaft, “When Is ‘Nearest Neighbor’ Meaningful?”, <em>International Conference on Database Theory</em>, 1999, <a href="https://doi.org/10.1007/3-540-49257-7_15">doi:10.1007/3-540-49257-7_15</a>.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsInJlYWRyIiwiRk5OIiwiY2xhc3MiXSwicmVwb3MiOltdfSwicmVuZGVyX2RmIjoiZGVmYXVsdCJ9
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMjA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0yMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMjAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0yMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8yMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMjAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTg7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE4ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTgtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE4ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xOCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE4LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL3NvZnRfc2Vuc29yLmNzdiIsImRhdGEvcHJvY2Vzc19mYXVsdHMuY3N2Il0=
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/07-machine-learning";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Maximize likelihoods with missing information by alternating an expectation step and a maximization step. Estimate the mean toluene level when a third of the results are below the detection limit, and compare with substituting half the limit. Then separate the fines from the main population in a crystallizer’s size distribution with a two-component normal mixture, watch the log-likelihood climb, and see how starting values matter.">
+
+<title>The EM algorithm – Statistical Data Science</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../assets/icon.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-08e743b8a00363a0142a1433e4fed0e3.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ab96d8af648005465c74c225fb44d324.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-f318f671043db6e5a1da1b683be3d381.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d2c8f5996ab0c2981de6fccade96ed74.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
+<link href="../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/course.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo light-content">
+    <img src="../../assets/fizz.svg" alt="Fizz the flask" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Statistical Data Science</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">The EM algorithm</h1>
+<p class="subtitle lead">Filling in what you can’t see: detection limits and hidden populations</p>
+</div>
+
+<div>
+  <div class="description">
+    Maximize likelihoods with missing information by alternating an expectation step and a maximization step. Estimate the mean toluene level when a third of the results are below the detection limit, and compare with substituting half the limit. Then separate the fines from the main population in a crystallizer’s size distribution with a two-component normal mixture, watch the log-likelihood climb, and see how starting values matter.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell" data-layout-align="center">
+<div class="lesson-meta">
+<p><span class="meta-item">Module 4 · Lesson 10 of 14</span> <span class="meta-item">Week 70 of 160</span> <span class="meta-item">About 5–7 hours</span></p>
+</div>
+</div>
+<p>Some likelihoods would be easy, if only you knew one more thing. In Lesson 1.11, the lab’s titrator reported some water results as “&lt;20 ppm”, and the database stored them as 10 ppm, half the detection limit, “so that the choice can be revisited”. Now we revisit it. If you knew those results exactly, estimating the mean would be trivial. You don’t, but you do know something: each one is below the limit.</p>
+<p>The <strong>EM algorithm</strong> (expectation-maximization, named and generalized by Dempster, Laird and Rubin in 1977) turns that situation into a simple loop. Fill in what you can’t see with its expected value, given your current estimates (the <strong>E-step</strong>). Estimate the parameters as if the filled-in data were real (the <strong>M-step</strong>). Repeat. Each round, the likelihood goes up, and the estimates converge to the maximum likelihood estimates.</p>
+<div class="fizz">
+<p>EM is like a detective who guesses the missing clues, re-solves the case, uses the new answer to guess the clues better, and keeps going until the story stops changing. Elementary, my dear Watson!</p>
+</div>
+<p><strong>In this lesson you’ll:</strong></p>
+<ul>
+<li>see why substituting half the detection limit is biased</li>
+<li>run EM for data below a detection limit, and check it against direct maximum likelihood</li>
+<li>fit a two-population mixture model to crystal sizes with EM</li>
+<li>watch the log-likelihood climb at every step</li>
+<li>see how starting values decide where EM ends up</li>
+</ul>
+<section id="results-below-the-detection-limit" class="level2">
+<h2 class="anchored" data-anchor-id="results-below-the-detection-limit">Results below the detection limit</h2>
+<p>The GC can’t quantify toluene below 5 ppm. Of the last 40 batches, 27 have a result, and 13 were reported as “&lt;5 ppm”:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tol)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   batch_id toluene_ppm lod_ppm below_lod</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt; &lt;lgl&gt;    </span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 T01             6.09       5 FALSE    </span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 T02             5.19       5 FALSE    </span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 T03            11.6        5 FALSE    </span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 T04             5.8        5 FALSE    </span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5 T05             6.17       5 FALSE    </span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6 T06            NA          5 TRUE</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(detected)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1]  5.11  5.19  5.69  5.80  5.86  6.09  6.12  6.17  6.39  6.75  6.84  7.10</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [13]  7.30  7.42  7.69  7.80  8.03  8.17  8.56  8.67  8.67  8.89  9.23  9.32</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [25]  9.67 10.45 11.65</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>What’s the mean toluene level? There are several quick answers, and they disagree:</p>
+<ul>
+<li><strong>Drop the censored results</strong> and average the other 27. That ignores that the 13 missing results are all <em>low</em>, so it’s biased upward.</li>
+<li><strong>Substitute the limit</strong>, 5 ppm, which overstates every censored result.</li>
+<li><strong>Substitute half the limit</strong>, 2.5 ppm, the plant’s convention.</li>
+<li><strong>Substitute zero</strong>, which understates them all.</li>
+</ul>
+<div class="cell" data-layout-align="center" data-setup="true" data-exercise="[&quot;ex4_10_naive&quot;,&quot;ex4_10_estep&quot;,&quot;ex4_10_em&quot;,&quot;ex4_10_resp&quot;,&quot;ex4_10_mstep&quot;,&quot;ex4_10_loop&quot;,&quot;ex4_10_starts&quot;,&quot;ex4_10_classify&quot;]">
+<script type="exercise-setup-ex4_10_naive-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_estep-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_em-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_resp-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_mstep-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_loop-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_starts-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+<script type="exercise-setup-ex4_10_classify-contents">
+eyJhdHRyIjp7ImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjpbImV4NF8xMF9uYWl2ZSIsImV4NF8xMF9lc3RlcCIsImV4NF8xMF9lbSIsImV4NF8xMF9yZXNwIiwiZXg0XzEwX21zdGVwIiwiZXg0XzEwX2xvb3AiLCJleDRfMTBfc3RhcnRzIiwiZXg0XzEwX2NsYXNzaWZ5Il0sImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWUsInNldHVwIjp0cnVlfSwiY29kZSI6ImxpYnJhcnkocmVhZHIpXG50b2wgPC0gcmVhZF9jc3YoXCJkYXRhL2ltcHVyaXR5X2xvZC5jc3ZcIiwgc2hvd19jb2xfdHlwZXMgPSBGQUxTRSlcbmNyeXN0YWxzIDwtIHJlYWRfY3N2KFwiZGF0YS9jcnlzdGFsX3NpemVzLmNzdlwiLCBzaG93X2NvbF90eXBlcyA9IEZBTFNFKVxuZGV0ZWN0ZWQgPC0gdG9sJHRvbHVlbmVfcHBtWyF0b2wkYmVsb3dfbG9kXSAgICAgIyB0aGUgMjcgcmVzdWx0cyBhYm92ZSB0aGUgbGltaXRcbm5fYmVsb3cgPC0gc3VtKHRvbCRiZWxvd19sb2QpICAgICAgICAgICAgICAgICAgICMgdGhlIDEzIHJlc3VsdHMgcmVwb3J0ZWQgYXMgXCI8NSBwcG1cIlxuTCA8LSA1ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyB0aGUgZGV0ZWN0aW9uIGxpbWl0LCBwcG1cbm4gPC0gNDBcbnggPC0gY3J5c3RhbHMkc2l6ZV91bSAgICAgICAgICAgICAgICAgICAgICAgICAgICMgMjUwIGNyeXN0YWwgc2l6ZXMsIG1pY3JvbWV0ZXJzXG5taXhsbCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMikgc3VtKGxvZyhwICogZG5vcm0oeCwgbTEsIHMxKSArICgxIC0gcCkgKiBkbm9ybSh4LCBtMiwgczIpKSlcbmVtX21peCA8LSBmdW5jdGlvbihwLCBtMSwgczEsIG0yLCBzMiwgbWF4X2l0ZXIgPSAxMDAwLCB0b2wgPSAxZS04KSB7XG4gIGxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKVxuICBmb3IgKGkgaW4gMTptYXhfaXRlcikge1xuICAgIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgICBwIDwtIG1lYW4ocik7IG0xIDwtIHN1bShyICogeCkgLyBzdW0ocik7IG0yIDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG4gICAgczEgPC0gc3FydChzdW0ociAqICh4IC0gbTEpXjIpIC8gc3VtKHIpKTsgczIgPC0gc3FydChzdW0oKDEgLSByKSAqICh4IC0gbTIpXjIpIC8gc3VtKDEgLSByKSlcbiAgICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gICAgaWYgKGxsW2xlbmd0aChsbCldIC0gbGxbbGVuZ3RoKGxsKSAtIDFdIDwgdG9sKSBicmVha1xuICB9XG4gIGxpc3QocGFyID0gYyhwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSwgaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsKVxufSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> The setup code has the 27 detected results as <code>detected</code>, and the number below the limit as <code>n_below</code>. Compute the mean the first three ways.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_naive" data-caption="Your turn · Three quick answers">
+<div>
+<div id="webr-2" class="exercise-cell">
+
+</div>
+<script type="webr-2-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhyZWUgcXVpY2sgYW5zd2VycyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg0XzEwX25haXZlIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJjKGRyb3AgPSBtZWFuKGRldGVjdGVkKSxcbiAgbGltaXQgPSAoc3VtKGRldGVjdGVkKSArIG5fYmVsb3cgKiA1KSAvIDQwLFxuICBoYWxmX2xpbWl0ID0gKHN1bShkZXRlY3RlZCkgKyBuX2JlbG93ICogX19fX19fKSAvIDQwKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_naive">
+<p>Half the limit is 2.5 ppm.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_naive">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">drop =</span> <span class="fu">mean</span>(detected),</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">limit =</span> (<span class="fu">sum</span>(detected) <span class="sc">+</span> n_below <span class="sc">*</span> <span class="dv">5</span>) <span class="sc">/</span> <span class="dv">40</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">half_limit =</span> (<span class="fu">sum</span>(detected) <span class="sc">+</span> n_below <span class="sc">*</span> <span class="fl">2.5</span>) <span class="sc">/</span> <span class="dv">40</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>7.58, 6.74 and 5.93 ppm: a spread of more than 1.6 ppm, just from how the 13 results are handled. Which is right? None of them, quite. The substitution methods also wreck the SD: with every censored result at exactly 2.5 ppm, the data get an artificial spike, and the SD comes out at 2.76. EM does better.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_naive" data-check="true">
+<script type="exercise-check-ex4_10_naive-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9uYWl2ZSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDMgJiYgaXNUUlVFKGFicygucmVzdWx0W1szXV0gLSA1LjkyODI1KSA8IDFlLTYpICYmIGlzVFJVRShhYnMoLnJlc3VsdFtbMV1dIC0gNy41Nzg4ODkpIDwgMWUtNSkpIHtcbiAgbGlzdChjb3JyZWN0ID0gVFJVRSwgbWVzc2FnZSA9IFwiQ29ycmVjdDogNy41OCwgNi43NCBhbmQgNS45MyBwcG0sIGRlcGVuZGluZyBvbiB0aGUgY2hvaWNlLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gU3Vic3RpdHV0ZSAyLjUgZm9yIGVhY2ggY2Vuc29yZWQgcmVzdWx0LlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="em-for-censored-data" class="level2">
+<h2 class="anchored" data-anchor-id="em-for-censored-data">EM for censored data</h2>
+<p>Suppose the toluene levels are normal with mean <span class="math inline">\mu</span> and SD <span class="math inline">\sigma</span>. If we had all 40 values, the maximum likelihood estimates would be the mean and the (divide-by-<span class="math inline">n</span>) SD, which only need two sums: <span class="math inline">\sum x_i</span> and <span class="math inline">\sum x_i^2</span>. EM fills in the censored results’ contributions to those two sums with their <strong>expected values</strong>, given that each one is below <span class="math inline">L = 5</span> and given the current estimates.</p>
+<p>For a normal variable below <span class="math inline">L</span>, with <span class="math inline">c = (L - \mu)/\sigma</span> and <span class="math inline">\lambda = \phi(c)/\Phi(c)</span> (the normal density over the normal CDF at <span class="math inline">c</span>), the truncated normal distribution gives</p>
+<p><span class="math display">
+E[X \mid X &lt; L] = \mu - \sigma\lambda, \qquad E[X^2 \mid X &lt; L] = \mu^2 + \sigma^2 - \sigma(L + \mu)\lambda .
+</span></p>
+<p>So one round of EM is:</p>
+<ul>
+<li><strong>E-step:</strong> compute <span class="math inline">E[X \mid X &lt; L]</span> and <span class="math inline">E[X^2 \mid X &lt; L]</span> at the current <span class="math inline">\mu</span> and <span class="math inline">\sigma</span>.</li>
+<li><strong>M-step:</strong> <span class="math inline">\mu_{\text{new}} = \left(\sum_{\text{detected}} x_i + n_{\text{below}}\, E[X \mid X &lt; L]\right)/n</span>, and <span class="math inline">\sigma^2_{\text{new}} = \left(\sum_{\text{detected}} x_i^2 + n_{\text{below}}\, E[X^2 \mid X &lt; L]\right)/n - \mu_{\text{new}}^2</span>.</li>
+</ul>
+<p><strong>Your turn.</strong> Write the E-step function, and evaluate it at <span class="math inline">\mu = 6</span> and <span class="math inline">\sigma = 2.5</span>.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_estep" data-caption="Your turn · The E-step">
+<div>
+<div id="webr-4" class="exercise-cell">
+
+</div>
+<script type="webr-4-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIEUtc3RlcCIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg0XzEwX2VzdGVwIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJlX3N0ZXAgPC0gZnVuY3Rpb24obXUsIHNpZ21hKSB7XG4gIGNjIDwtIChMIC0gbXUpIC8gc2lnbWFcbiAgbGFtIDwtIGRub3JtKGNjKSAvIF9fX19fXyhjYylcbiAgYyhFWCA9IG11IC0gc2lnbWEgKiBsYW0sIEVYMiA9IG11XjIgKyBzaWdtYV4yIC0gc2lnbWEgKiAoTCArIG11KSAqIGxhbSlcbn1cbmVfc3RlcCg2LCAyLjUpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_estep">
+<p><span class="math inline">\lambda</span> divides the normal density by the normal CDF, <code>pnorm()</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_estep">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>e_step <span class="ot">&lt;-</span> <span class="cf">function</span>(mu, sigma) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  cc <span class="ot">&lt;-</span> (L <span class="sc">-</span> mu) <span class="sc">/</span> sigma</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  lam <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(cc) <span class="sc">/</span> <span class="fu">pnorm</span>(cc)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">EX =</span> mu <span class="sc">-</span> sigma <span class="sc">*</span> lam, <span class="at">EX2 =</span> mu<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> sigma<span class="sc">^</span><span class="dv">2</span> <span class="sc">-</span> sigma <span class="sc">*</span> (L <span class="sc">+</span> mu) <span class="sc">*</span> lam)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">e_step</span>(<span class="dv">6</span>, <span class="fl">2.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>If the toluene levels were <span class="math inline">N(6, 2.5^2)</span>, a result below 5 ppm would be 3.33 ppm on average. That’s more than half the limit, 2.5 ppm. A numerical integral of <span class="math inline">x</span> times the truncated density gives the same 3.33, which is a good check of the formula.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_estep" data-check="true">
+<script type="exercise-check-ex4_10_estep-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9lc3RlcCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiZiA8LSBnZXQwKFwiZV9zdGVwXCIsIGVudmlyID0gLmVudmlyX3Jlc3VsdCwgaW5oZXJpdHMgPSBGQUxTRSlcbnIxIDwtIHRyeUNhdGNoKGYoNiwgMi41KSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxucjIgPC0gdHJ5Q2F0Y2goZig4LCAzKSwgZXJyb3IgPSBmdW5jdGlvbihlKSBOVUxMKVxuaWYgKGlzLmZ1bmN0aW9uKGYpICYmIGlzLm51bWVyaWMocjEpICYmIGlzVFJVRShhYnMocjFbWzFdXSAtIDMuMzI4MTEpIDwgMWUtNSkgJiYgaXNUUlVFKGFicyhyMVtbMl1dIC0gMTIuODU5MjEpIDwgMWUtNCkgJiYgaXNUUlVFKGFicyhyMltbMV1dIC0gMy40MjQ1OTQyKSA8IDFlLTUpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGEgY2Vuc29yZWQgcmVzdWx0IGF2ZXJhZ2VzIDMuMzMgcHBtIGF0IHRoZXNlIHZhbHVlcy5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIERpdmlkZSBkbm9ybShjYykgYnkgcG5vcm0oY2MpLlwiKVxufSJ9
+</script>
+</div>
+<p><strong>Your turn.</strong> Now run EM: start from the mean and SD of the detected results, and repeat the E-step and the M-step 100 times.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_em" data-caption="Your turn · EM for the detection limit">
+<div>
+<div id="webr-6" class="exercise-cell">
+
+</div>
+<script type="webr-6-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRU0gZm9yIHRoZSBkZXRlY3Rpb24gbGltaXQiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9lbSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiZV9zdGVwIDwtIGZ1bmN0aW9uKG11LCBzaWdtYSkgeyAgICAgICAgICAgICAgICAgIyB5b3VyIEUtc3RlcCwgZnJvbSB0aGUgbGFzdCBleGVyY2lzZVxuICBjYyA8LSAoTCAtIG11KSAvIHNpZ21hXG4gIGxhbSA8LSBkbm9ybShjYykgLyBwbm9ybShjYylcbiAgYyhFWCA9IG11IC0gc2lnbWEgKiBsYW0sIEVYMiA9IG11XjIgKyBzaWdtYV4yIC0gc2lnbWEgKiAoTCArIG11KSAqIGxhbSlcbn1cbm11IDwtIG1lYW4oZGV0ZWN0ZWQpXG5zaWdtYSA8LSBzZChkZXRlY3RlZClcbmZvciAoaSBpbiAxOjEwMCkge1xuICBlIDwtIGVfc3RlcChtdSwgc2lnbWEpICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyBFLXN0ZXBcbiAgbXVfbmV3IDwtIChzdW0oZGV0ZWN0ZWQpICsgbl9iZWxvdyAqIGVbW1wiX19fX19fXCJdXSkgLyBuICAgICAgIyBNLXN0ZXBcbiAgc2lnbWEgPC0gc3FydCgoc3VtKGRldGVjdGVkXjIpICsgbl9iZWxvdyAqIGVbW1wiRVgyXCJdXSkgLyBuIC0gbXVfbmV3XjIpXG4gIG11IDwtIG11X25ld1xufVxuYyhtdSA9IG11LCBzaWdtYSA9IHNpZ21hKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_em">
+<p>The mean uses the expected value of <span class="math inline">X</span>: <code>e[["EX"]]</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_em">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>e_step <span class="ot">&lt;-</span> <span class="cf">function</span>(mu, sigma) {                 <span class="co"># your E-step, from the last exercise</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  cc <span class="ot">&lt;-</span> (L <span class="sc">-</span> mu) <span class="sc">/</span> sigma</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  lam <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(cc) <span class="sc">/</span> <span class="fu">pnorm</span>(cc)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">EX =</span> mu <span class="sc">-</span> sigma <span class="sc">*</span> lam, <span class="at">EX2 =</span> mu<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> sigma<span class="sc">^</span><span class="dv">2</span> <span class="sc">-</span> sigma <span class="sc">*</span> (L <span class="sc">+</span> mu) <span class="sc">*</span> lam)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">mean</span>(detected)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>sigma <span class="ot">&lt;-</span> <span class="fu">sd</span>(detected)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>) {</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  e <span class="ot">&lt;-</span> <span class="fu">e_step</span>(mu, sigma)                                       <span class="co"># E-step</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  mu_new <span class="ot">&lt;-</span> (<span class="fu">sum</span>(detected) <span class="sc">+</span> n_below <span class="sc">*</span> e[[<span class="st">"EX"</span>]]) <span class="sc">/</span> n          <span class="co"># M-step</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  sigma <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((<span class="fu">sum</span>(detected<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> n_below <span class="sc">*</span> e[[<span class="st">"EX2"</span>]]) <span class="sc">/</span> n <span class="sc">-</span> mu_new<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  mu <span class="ot">&lt;-</span> mu_new</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mu =</span> mu, <span class="at">sigma =</span> sigma)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="math inline">\hat\mu = 6.22</span> ppm and <span class="math inline">\hat\sigma = 2.48</span> ppm. Maximizing the censored likelihood directly with <code>optim()</code>, as in Lesson 9 (detected results contribute the density, censored ones <span class="math inline">\Phi(c)</span>), gives the same values to six digits. The data were simulated from a mean of 6.0 and an SD of 2.5, so EM is close to the truth, and much closer than dropping the censored results (7.58). Half the limit gave 5.93, not too far off here, but its SD is wrong, and the module project shows that its error depends on how much is censored.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_em" data-check="true">
+<script type="exercise-check-ex4_10_em-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9lbSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDIgJiYgaXNUUlVFKGFicygucmVzdWx0W1sxXV0gLSA2LjIyMjk4KSA8IDFlLTQpICYmIGlzVFJVRShhYnMoLnJlc3VsdFtbMl1dIC0gMi40NzgzMSkgPCAxZS00KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiBtdSA9IDYuMjIgYW5kIHNpZ21hID0gMi40OCwgdGhlIG1heGltdW0gbGlrZWxpaG9vZCBlc3RpbWF0ZXMuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBUaGUgbWVhbidzIE0tc3RlcCB1c2VzIGVbW1xcXCJFWFxcXCJdXS5cIilcbn0ifQ==
+</script>
+</div>
+<p>Here are the detected results, with the fitted normal distribution. EM accounts for the part of the curve below the limit, where the 13 censored results must be:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>mu_hat <span class="ot">&lt;-</span> <span class="fl">6.222980</span>; sigma_hat <span class="ot">&lt;-</span> <span class="fl">2.478307</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>curve_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">13</span>, <span class="at">by =</span> <span class="fl">0.05</span>))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>curve_df<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="dv">40</span> <span class="sc">*</span> <span class="fu">dnorm</span>(curve_df<span class="sc">$</span>t, mu_hat, sigma_hat)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">data.frame</span>(<span class="at">t =</span> detected), <span class="fu">aes</span>(<span class="at">x =</span> t)) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_area</span>(<span class="at">data =</span> <span class="fu">subset</span>(curve_df, t <span class="sc">&lt;=</span> <span class="dv">5</span>), <span class="fu">aes</span>(<span class="at">x =</span> t, <span class="at">y =</span> y), <span class="at">fill =</span> <span class="st">"#F4C0D1"</span>) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">after_stat</span>(count)), <span class="at">binwidth =</span> <span class="dv">1</span>, <span class="at">boundary =</span> <span class="dv">5</span>, <span class="at">fill =</span> <span class="st">"#C2416C"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> curve_df, <span class="fu">aes</span>(<span class="at">x =</span> t, <span class="at">y =</span> y), <span class="at">color =</span> <span class="st">"#3A1F35"</span>, <span class="at">linewidth =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">5</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"#3A1F35"</span>) <span class="sc">+</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">1.6</span>, <span class="at">y =</span> <span class="fl">7.2</span>, <span class="at">label =</span> <span class="st">"13 results</span><span class="sc">\n</span><span class="st">below 5 ppm"</span>, <span class="at">size =</span> <span class="fl">3.6</span>, <span class="at">color =</span> <span class="st">"#3A1F35"</span>) <span class="sc">+</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">5.1</span>, <span class="at">y =</span> <span class="fl">7.9</span>, <span class="at">label =</span> <span class="st">"detection limit"</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="fl">3.6</span>, <span class="at">color =</span> <span class="st">"#3A1F35"</span>) <span class="sc">+</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Toluene (ppm)"</span>, <span class="at">y =</span> <span class="st">"Number of batches"</span>) <span class="sc">+</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="10-em-algorithm_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Histogram of the 27 detected toluene results, from 5 to about 12 ppm, with the normal curve fitted by EM, mean 6.22 and SD 2.48, scaled to 40 results. The curve extends below the detection limit of 5 ppm, where a shaded area marks the 13 results reported as below 5 ppm; the histogram has no bars there." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="mixture-models" class="level2">
+<h2 class="anchored" data-anchor-id="mixture-models">Mixture models</h2>
+<p>The second kind of hidden information is a <strong>latent variable</strong>: a label that every observation has, but nobody recorded. Lesson 4 simulated crystal sizes from two populations, fines and the main population. Here are 250 real crystals from the crystallizer’s image analyzer:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(crystals, <span class="fu">aes</span>(<span class="at">x =</span> size_um)) <span class="sc">+</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">10</span>, <span class="at">boundary =</span> <span class="dv">0</span>, <span class="at">fill =</span> <span class="st">"#C2416C"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Crystal size (µm)"</span>, <span class="at">y =</span> <span class="st">"Number of crystals"</span>) <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="10-em-algorithm_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Histogram of 250 crystal sizes from 45 to 327 micrometers, with two humps: a narrow one around 85 micrometers and a broader, taller one around 215 micrometers." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Two humps. The model is a <strong>two-component normal mixture</strong>: each crystal is a fine with probability <span class="math inline">p</span>, with size <span class="math inline">N(\mu_1, \sigma_1^2)</span>, and otherwise from the main population, <span class="math inline">N(\mu_2, \sigma_2^2)</span>. If we knew which crystals were fines, we’d just compute the two groups’ means and SDs. We don’t, so EM fills in the labels with <strong>probabilities</strong>.</p>
+<ul>
+<li><strong>E-step:</strong> for each crystal, the <strong>responsibility</strong> of the fines is the posterior probability that it’s a fine, by Bayes’ theorem (as in Lesson 3.13): <span class="math display">
+r_i = \frac{p\, \phi(x_i; \mu_1, \sigma_1)}{p\, \phi(x_i; \mu_1, \sigma_1) + (1 - p)\, \phi(x_i; \mu_2, \sigma_2)}.
+</span></li>
+<li><strong>M-step:</strong> weighted versions of the obvious estimates: <span class="math inline">p = \bar r</span>, <span class="math inline">\mu_1 = \sum r_i x_i / \sum r_i</span>, <span class="math inline">\sigma_1^2 = \sum r_i (x_i - \mu_1)^2 / \sum r_i</span>, and the same for the main population with weights <span class="math inline">1 - r_i</span>.</li>
+</ul>
+<p><strong>Your turn.</strong> Start from <span class="math inline">p = 0.5</span>, <span class="math inline">\mu_1 = 100</span>, <span class="math inline">\mu_2 = 200</span> and both SDs 30. Compute the responsibilities.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_resp" data-caption="Your turn · Who's a fine?">
+<div>
+<div id="webr-8" class="exercise-cell">
+
+</div>
+<script type="webr-8-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgV2hvJ3MgYSBmaW5lPyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg0XzEwX3Jlc3AiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6InAgPC0gMC41OyBtMSA8LSAxMDA7IHMxIDwtIDMwOyBtMiA8LSAyMDA7IHMyIDwtIDMwXG5hIDwtIHAgKiBkbm9ybSh4LCBtMSwgczEpICAgICAgICAgICAgICAgICAjIGZpbmVzXG5iIDwtICgxIC0gcCkgKiBkbm9ybSh4LCBfX19fX18sIHMyKSAgICAgICAjIG1haW4gcG9wdWxhdGlvblxuciA8LSBhIC8gKGEgKyBiKVxuZGF0YS5mcmFtZShzaXplID0gaGVhZCh4KSwgcmVzcG9uc2liaWxpdHkgPSByb3VuZChoZWFkKHIpLCA0KSkifQ==
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_resp">
+<p>The main population’s mean is <code>m2</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_resp">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fl">0.5</span>; m1 <span class="ot">&lt;-</span> <span class="dv">100</span>; s1 <span class="ot">&lt;-</span> <span class="dv">30</span>; m2 <span class="ot">&lt;-</span> <span class="dv">200</span>; s2 <span class="ot">&lt;-</span> <span class="dv">30</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> p <span class="sc">*</span> <span class="fu">dnorm</span>(x, m1, s1)                 <span class="co"># fines</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> p) <span class="sc">*</span> <span class="fu">dnorm</span>(x, m2, s2)           <span class="co"># main population</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> a <span class="sc">/</span> (a <span class="sc">+</span> b)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">size =</span> <span class="fu">head</span>(x), <span class="at">responsibility =</span> <span class="fu">round</span>(<span class="fu">head</span>(r), <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The 71.6 µm crystal is almost surely a fine (0.9998), and the 228.8 µm one almost surely not (0.0002). The 151.8 µm crystal, halfway between the two means, is a coin toss: 0.45. EM doesn’t force a decision. It keeps the uncertainty, and each crystal counts as 0.45 of a fine and 0.55 of a main-population crystal in the M-step.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_resp" data-check="true">
+<script type="exercise-check-ex4_10_resp-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9yZXNwIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJyciA8LSB0cnlDYXRjaCgucmVzdWx0JHJlc3BvbnNpYmlsaXR5LCBlcnJvciA9IGZ1bmN0aW9uKGUpIE5VTEwpXG5pZiAoaXMuZGF0YS5mcmFtZSgucmVzdWx0KSAmJiBpc1RSVUUoYWxsKGFicyhyciAtIGMoMC4wMTM0LCAwLjAwMTMsIDAuOTk5OCwgMC4wMDE4LCAwLjAwMDIsIDAuNDUwMikpIDwgMWUtNCkpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGNsZWFyIGZpbmVzLCBjbGVhciBtYWluIGNyeXN0YWxzLCBhbmQgYSBjb2luIHRvc3MgYXQgMTUxLjggwrVtLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gVGhlIG1haW4gcG9wdWxhdGlvbidzIGRlbnNpdHkgdXNlcyBtMi5cIilcbn0ifQ==
+</script>
+</div>
+<p><strong>Your turn.</strong> Now the M-step: update the five parameters from the responsibilities.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_mstep" data-caption="Your turn · The M-step">
+<div>
+<div id="webr-10" class="exercise-cell">
+
+</div>
+<script type="webr-10-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgVGhlIE0tc3RlcCIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg0XzEwX21zdGVwIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJwIDwtIDAuNTsgbTEgPC0gMTAwOyBzMSA8LSAzMDsgbTIgPC0gMjAwOyBzMiA8LSAzMFxuYSA8LSBwICogZG5vcm0oeCwgbTEsIHMxKTsgYiA8LSAoMSAtIHApICogZG5vcm0oeCwgbTIsIHMyKTsgciA8LSBhIC8gKGEgKyBiKVxucF9uZXcgPC0gbWVhbihyKVxubTFfbmV3IDwtIHN1bShyICogeCkgLyBzdW0oX19fX19fKVxubTJfbmV3IDwtIHN1bSgoMSAtIHIpICogeCkgLyBzdW0oMSAtIHIpXG5zMV9uZXcgPC0gc3FydChzdW0ociAqICh4IC0gbTFfbmV3KV4yKSAvIHN1bShyKSlcbnMyX25ldyA8LSBzcXJ0KHN1bSgoMSAtIHIpICogKHggLSBtMl9uZXcpXjIpIC8gc3VtKDEgLSByKSlcbmMocCA9IHBfbmV3LCBtdTEgPSBtMV9uZXcsIHMxID0gczFfbmV3LCBtdTIgPSBtMl9uZXcsIHMyID0gczJfbmV3KSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_mstep">
+<p>A weighted mean divides by the sum of the weights, <code>sum(r)</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_mstep">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fl">0.5</span>; m1 <span class="ot">&lt;-</span> <span class="dv">100</span>; s1 <span class="ot">&lt;-</span> <span class="dv">30</span>; m2 <span class="ot">&lt;-</span> <span class="dv">200</span>; s2 <span class="ot">&lt;-</span> <span class="dv">30</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> p <span class="sc">*</span> <span class="fu">dnorm</span>(x, m1, s1); b <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> p) <span class="sc">*</span> <span class="fu">dnorm</span>(x, m2, s2); r <span class="ot">&lt;-</span> a <span class="sc">/</span> (a <span class="sc">+</span> b)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>p_new <span class="ot">&lt;-</span> <span class="fu">mean</span>(r)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>m1_new <span class="ot">&lt;-</span> <span class="fu">sum</span>(r <span class="sc">*</span> x) <span class="sc">/</span> <span class="fu">sum</span>(r)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>m2_new <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="dv">1</span> <span class="sc">-</span> r) <span class="sc">*</span> x) <span class="sc">/</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">-</span> r)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>s1_new <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(r <span class="sc">*</span> (x <span class="sc">-</span> m1_new)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(r))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>s2_new <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((<span class="dv">1</span> <span class="sc">-</span> r) <span class="sc">*</span> (x <span class="sc">-</span> m2_new)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">-</span> r))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">p =</span> p_new, <span class="at">mu1 =</span> m1_new, <span class="at">s1 =</span> s1_new, <span class="at">mu2 =</span> m2_new, <span class="at">s2 =</span> s2_new)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After one round: 41% fines, with means of 90.7 and 220.8 µm and SDs of 24.3 and 35.7 µm. The fines already look narrower than the starting guess, and the main population broader. Now repeat.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_mstep" data-check="true">
+<script type="exercise-check-ex4_10_mstep-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9tc3RlcCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDUgJiYgaXNUUlVFKGFicygucmVzdWx0W1sxXV0gLSAwLjQwODg5NzgpIDwgMWUtNikgJiYgaXNUUlVFKGFicygucmVzdWx0W1syXV0gLSA5MC43MTE3MikgPCAxZS00KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiA0MSUgZmluZXMgYXQgOTAuNyDCtW0sIGFmdGVyIG9uZSByb3VuZC5cIilcbn0gZWxzZSB7XG4gIGxpc3QoY29ycmVjdCA9IEZBTFNFLCBtZXNzYWdlID0gXCJOb3QgcXVpdGUuIERpdmlkZSBieSBzdW0ocikuXCIpXG59In0=
+</script>
+</div>
+</section>
+<section id="convergence" class="level2">
+<h2 class="anchored" data-anchor-id="convergence">Convergence</h2>
+<p>EM has a remarkable property: <strong>the likelihood never goes down</strong>. Each E-step builds a function that touches the log-likelihood at the current estimates and lies below it everywhere else, and each M-step climbs to that function’s maximum. So the log-likelihood rises at every step until it levels off at a maximum. A good stopping rule is to stop when it rises by less than a tiny amount, such as <span class="math inline">10^{-8}</span>.</p>
+<p><strong>Your turn.</strong> Put the E- and M-steps in a loop, record the log-likelihood after every round, and stop when it stops rising.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_loop" data-caption="Your turn · EM until it converges">
+<div>
+<div id="webr-12" class="exercise-cell">
+
+</div>
+<script type="webr-12-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJZb3VyIHR1cm4gwrcgRU0gdW50aWwgaXQgY29udmVyZ2VzIiwiZWRpdCI6dHJ1ZSwiZXZhbCI6dHJ1ZSwiZXhlcmNpc2UiOiJleDRfMTBfbG9vcCIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoicCA8LSAwLjU7IG0xIDwtIDEwMDsgczEgPC0gMzA7IG0yIDwtIDIwMDsgczIgPC0gMzBcbmxsIDwtIG1peGxsKHAsIG0xLCBzMSwgbTIsIHMyKSAgICAgICAgICAgICAgICAgICAgIyB0aGUgbG9nLWxpa2VsaWhvb2QgYXQgdGhlIHN0YXJ0XG5mb3IgKGkgaW4gMToxMDAwKSB7XG4gIGEgPC0gcCAqIGRub3JtKHgsIG0xLCBzMSk7IGIgPC0gKDEgLSBwKSAqIGRub3JtKHgsIG0yLCBzMik7IHIgPC0gYSAvIChhICsgYilcbiAgcCA8LSBtZWFuKHIpOyBtMSA8LSBzdW0ociAqIHgpIC8gc3VtKHIpOyBtMiA8LSBzdW0oKDEgLSByKSAqIHgpIC8gc3VtKDEgLSByKVxuICBzMSA8LSBzcXJ0KHN1bShyICogKHggLSBtMSleMikgLyBzdW0ocikpOyBzMiA8LSBzcXJ0KHN1bSgoMSAtIHIpICogKHggLSBtMileMikgLyBzdW0oMSAtIHIpKVxuICBsbCA8LSBjKGxsLCBtaXhsbChwLCBtMSwgczEsIG0yLCBzMikpXG4gIGlmIChsbFtsZW5ndGgobGwpXSAtIGxsW2xlbmd0aChsbCkgLSAxXSA8IF9fX19fXykgYnJlYWtcbn1cbmMoaXRlcmF0aW9ucyA9IGksIGxvZ2xpayA9IGxsW2xlbmd0aChsbCldLCBwID0gcCwgbXUxID0gbTEsIHMxID0gczEsIG11MiA9IG0yLCBzMiA9IHMyKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_loop">
+<p>Stop when the gain is below <code>1e-8</code>.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_loop">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fl">0.5</span>; m1 <span class="ot">&lt;-</span> <span class="dv">100</span>; s1 <span class="ot">&lt;-</span> <span class="dv">30</span>; m2 <span class="ot">&lt;-</span> <span class="dv">200</span>; s2 <span class="ot">&lt;-</span> <span class="dv">30</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ll <span class="ot">&lt;-</span> <span class="fu">mixll</span>(p, m1, s1, m2, s2)                    <span class="co"># the log-likelihood at the start</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> p <span class="sc">*</span> <span class="fu">dnorm</span>(x, m1, s1); b <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> p) <span class="sc">*</span> <span class="fu">dnorm</span>(x, m2, s2); r <span class="ot">&lt;-</span> a <span class="sc">/</span> (a <span class="sc">+</span> b)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">mean</span>(r); m1 <span class="ot">&lt;-</span> <span class="fu">sum</span>(r <span class="sc">*</span> x) <span class="sc">/</span> <span class="fu">sum</span>(r); m2 <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="dv">1</span> <span class="sc">-</span> r) <span class="sc">*</span> x) <span class="sc">/</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">-</span> r)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  s1 <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(r <span class="sc">*</span> (x <span class="sc">-</span> m1)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(r)); s2 <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((<span class="dv">1</span> <span class="sc">-</span> r) <span class="sc">*</span> (x <span class="sc">-</span> m2)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">-</span> r))</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  ll <span class="ot">&lt;-</span> <span class="fu">c</span>(ll, <span class="fu">mixll</span>(p, m1, s1, m2, s2))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (ll[<span class="fu">length</span>(ll)] <span class="sc">-</span> ll[<span class="fu">length</span>(ll) <span class="sc">-</span> <span class="dv">1</span>] <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="cf">break</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">iterations =</span> i, <span class="at">loglik =</span> ll[<span class="fu">length</span>(ll)], <span class="at">p =</span> p, <span class="at">mu1 =</span> m1, <span class="at">s1 =</span> s1, <span class="at">mu2 =</span> m2, <span class="at">s2 =</span> s2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>14 rounds. 37.5% of the crystals are fines, of <span class="math inline">85.5 \pm 16.8</span> µm, and the main population is <span class="math inline">216.9 \pm 38.6</span> µm. The log-likelihood rose from −1416.3 to −1349.4, and <code>all(diff(ll) &gt;= 0)</code> confirms it never fell. (The crystals were simulated from 35% fines of <span class="math inline">85 \pm 18</span> µm and <span class="math inline">210 \pm 38</span> µm, so EM recovered the populations well from 250 crystals.)</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_loop" data-check="true">
+<script type="exercise-check-ex4_10_loop-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9sb29wIiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJpZiAoaXMubnVtZXJpYygucmVzdWx0KSAmJiBsZW5ndGgoLnJlc3VsdCkgPT0gNyAmJiBpc1RSVUUoYWJzKC5yZXN1bHRbW1wibG9nbGlrXCJdXSArIDEzNDkuMzYpIDwgMC4wMSkgJiYgaXNUUlVFKGFicygucmVzdWx0W1tcInBcIl1dIC0gMC4zNzUxMykgPCAxZS00KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiAzNy41JSBmaW5lcywgYWZ0ZXIgMTQgcm91bmRzLlwiKVxufSBlbHNlIHtcbiAgbGlzdChjb3JyZWN0ID0gRkFMU0UsIG1lc3NhZ2UgPSBcIk5vdCBxdWl0ZS4gU3RvcCB3aGVuIHRoZSBnYWluIGlzIGJlbG93IDFlLTguXCIpXG59In0=
+</script>
+</div>
+<p>Here’s the fitted mixture on the histogram, with its two components:</p>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pr <span class="ot">&lt;-</span> fit_mix<span class="sc">$</span>par</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>dens <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">s =</span> <span class="fu">seq</span>(<span class="dv">30</span>, <span class="dv">340</span>, <span class="at">by =</span> <span class="dv">1</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>dens<span class="sc">$</span>fines <span class="ot">&lt;-</span> pr[[<span class="st">"p"</span>]] <span class="sc">*</span> <span class="fu">dnorm</span>(dens<span class="sc">$</span>s, pr[[<span class="st">"mu1"</span>]], pr[[<span class="st">"s1"</span>]]) <span class="sc">*</span> <span class="dv">250</span> <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>dens<span class="sc">$</span>main <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> pr[[<span class="st">"p"</span>]]) <span class="sc">*</span> <span class="fu">dnorm</span>(dens<span class="sc">$</span>s, pr[[<span class="st">"mu2"</span>]], pr[[<span class="st">"s2"</span>]]) <span class="sc">*</span> <span class="dv">250</span> <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>dens<span class="sc">$</span>mixture <span class="ot">&lt;-</span> dens<span class="sc">$</span>fines <span class="sc">+</span> dens<span class="sc">$</span>main</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(crystals, <span class="fu">aes</span>(<span class="at">x =</span> size_um)) <span class="sc">+</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">10</span>, <span class="at">boundary =</span> <span class="dv">0</span>, <span class="at">fill =</span> <span class="st">"grey85"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> dens, <span class="fu">aes</span>(<span class="at">x =</span> s, <span class="at">y =</span> fines), <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> dens, <span class="fu">aes</span>(<span class="at">x =</span> s, <span class="at">y =</span> main), <span class="at">color =</span> <span class="st">"#1baf7a"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> dens, <span class="fu">aes</span>(<span class="at">x =</span> s, <span class="at">y =</span> mixture), <span class="at">color =</span> <span class="st">"#3A1F35"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="dv">62</span>, <span class="at">y =</span> <span class="dv">24</span>, <span class="at">label =</span> <span class="st">"fines, 37.5%"</span>, <span class="at">color =</span> <span class="st">"#2a78d6"</span>, <span class="at">size =</span> <span class="fl">3.6</span>, <span class="at">hjust =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="dv">268</span>, <span class="at">y =</span> <span class="dv">19</span>, <span class="at">label =</span> <span class="st">"main population"</span>, <span class="at">color =</span> <span class="st">"#1baf7a"</span>, <span class="at">size =</span> <span class="fl">3.6</span>, <span class="at">hjust =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Crystal size (µm)"</span>, <span class="at">y =</span> <span class="st">"Number of crystals"</span>) <span class="sc">+</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="10-em-algorithm_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" alt="Histogram of the 250 crystal sizes with the fitted two-component mixture density drawn on top as a dark curve, and its two weighted components as colored curves: the fines, a narrow peak at 85.5 micrometers holding 37.5% of the crystals, and the main population, a broad peak at 217 micrometers. The two components cross at about 127 micrometers." width="1008"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Go deeper: why EM is slow, and when it struggles
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>EM converges <strong>linearly</strong>, like bisection. Its rate depends on how much information is missing: when the populations overlap heavily, each round only improves the estimates a little, and EM can need thousands of rounds. Newton’s method on the same likelihood would converge quadratically, but EM’s steps are simpler, never leave the valid range (probabilities stay between 0 and 1, and SDs stay positive) and never decrease the likelihood. That’s why EM is so popular.</p>
+<p>Two traps. EM finds <em>a</em> maximum, not necessarily the highest one, so run it from several starting values and keep the best. And a mixture’s likelihood is unbounded: if one component shrinks onto a single data point, its SD goes to 0 and the likelihood to infinity. Starting values with sensible SDs, and a check that no SD collapses, avoid that.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="challenge-round" class="level2">
+<h2 class="anchored" data-anchor-id="challenge-round">Challenge round</h2>
+<p><strong>Challenge 1 · Starting values.</strong> The setup code has <code>em_mix()</code>, which runs this lesson’s EM from any starting values. Run it from three starts: the sensible one (100 and 200 µm), a start where the two components are identical (both 170 µm, SD 60), and a start with the labels swapped (250 and 80 µm). Compare where they end up.</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_starts" data-caption="Challenge · Where you start matters">
+<div>
+<div id="webr-14" class="exercise-cell">
+
+</div>
+<script type="webr-14-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgV2hlcmUgeW91IHN0YXJ0IG1hdHRlcnMiLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9zdGFydHMiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImZpdHMgPC0gbGlzdChzZW5zaWJsZSA9IGVtX21peCgwLjUsIDEwMCwgMzAsIDIwMCwgMzApLFxuICAgICAgICAgICAgIGlkZW50aWNhbCA9IGVtX21peCgwLjUsIDE3MCwgNjAsIDE3MCwgX19fX19fKSxcbiAgICAgICAgICAgICBzd2FwcGVkID0gZW1fbWl4KDAuNSwgMjUwLCAzMCwgODAsIDMwKSlcbnQoc2FwcGx5KGZpdHMsIGZ1bmN0aW9uKGYpIGMocm91bmQoZiRwYXIsIDMpLCBsb2dsaWsgPSB0YWlsKGYkbG9nbGlrLCAxKSkpKSJ9
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_starts">
+<p>For identical components, the second SD is also 60.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_starts">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">sensible =</span> <span class="fu">em_mix</span>(<span class="fl">0.5</span>, <span class="dv">100</span>, <span class="dv">30</span>, <span class="dv">200</span>, <span class="dv">30</span>),</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">identical =</span> <span class="fu">em_mix</span>(<span class="fl">0.5</span>, <span class="dv">170</span>, <span class="dv">60</span>, <span class="dv">170</span>, <span class="dv">60</span>),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">swapped =</span> <span class="fu">em_mix</span>(<span class="fl">0.5</span>, <span class="dv">250</span>, <span class="dv">30</span>, <span class="dv">80</span>, <span class="dv">30</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">t</span>(<span class="fu">sapply</span>(fits, <span class="cf">function</span>(f) <span class="fu">c</span>(<span class="fu">round</span>(f<span class="sc">$</span>par, <span class="dv">3</span>), <span class="at">loglik =</span> <span class="fu">tail</span>(f<span class="sc">$</span>loglik, <span class="dv">1</span>))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The swapped start finds the same fit with the labels exchanged: 62.5% in “component 1”, which is now the main population. That’s <strong>label switching</strong>, and it’s harmless. The identical start is stuck: both components stay at 167.6 µm with an SD of 71.3, a single normal distribution, with a much worse log-likelihood (−1421.5 against −1349.4). With identical components, every crystal gets a responsibility of exactly 0.5, so the M-step keeps them identical forever. It’s a stationary point, but not a maximum, and EM can’t escape it. Always try several different starts.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_starts" data-check="true">
+<script type="exercise-check-ex4_10_starts-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9zdGFydHMiLCJmaWctaGVpZ2h0IjoiNC41IiwiZmlnLXdpZHRoIjoiNyIsIm1pbi1saW5lcyI6IjQiLCJwZXJzaXN0Ijp0cnVlfSwiY29kZSI6ImlmIChpcy5tYXRyaXgoLnJlc3VsdCkgJiYgbnJvdygucmVzdWx0KSA9PSAzICYmIGlzVFJVRShhYnMoLnJlc3VsdFtcImlkZW50aWNhbFwiLCBcImxvZ2xpa1wiXSArIDE0MjEuNDk5KSA8IDAuMDEpICYmIGlzVFJVRShhYnMoLnJlc3VsdFtcInN3YXBwZWRcIiwgXCJsb2dsaWtcIl0gKyAxMzQ5LjM2KSA8IDAuMDEpKSB7XG4gIGxpc3QoY29ycmVjdCA9IFRSVUUsIG1lc3NhZ2UgPSBcIkNvcnJlY3Q6IGlkZW50aWNhbCBzdGFydHMgZ2V0IHN0dWNrLCBhbmQgc3dhcHBlZCBzdGFydHMgc3dpdGNoIHRoZSBsYWJlbHMuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBNYWtlIGJvdGggY29tcG9uZW50cyBpZGVudGljYWw6IFNEIDYwIGZvciBib3RoLlwiKVxufSJ9
+</script>
+</div>
+<p><strong>Challenge 2 · Counting the fines.</strong> Use the fitted mixture to classify each crystal: a fine if its responsibility is above 0.5. How many fines are there, and how many crystals are genuinely uncertain (a responsibility between 0.1 and 0.9)?</p>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_classify" data-caption="Challenge · Which crystals are fines?">
+<div>
+<div id="webr-16" class="exercise-cell">
+
+</div>
+<script type="webr-16-contents">
+eyJhdHRyIjp7ImNhcHRpb24iOiJDaGFsbGVuZ2UgwrcgV2hpY2ggY3J5c3RhbHMgYXJlIGZpbmVzPyIsImVkaXQiOnRydWUsImV2YWwiOnRydWUsImV4ZXJjaXNlIjoiZXg0XzEwX2NsYXNzaWZ5IiwiZmlnLWhlaWdodCI6IjQuNSIsImZpZy13aWR0aCI6IjciLCJtaW4tbGluZXMiOiI0IiwicGVyc2lzdCI6dHJ1ZX0sImNvZGUiOiJmaXQgPC0gZW1fbWl4KDAuNSwgMTAwLCAzMCwgMjAwLCAzMCkkcGFyXG5hIDwtIGZpdFtbXCJwXCJdXSAqIGRub3JtKHgsIGZpdFtbXCJtdTFcIl1dLCBmaXRbW1wiczFcIl1dKVxuYiA8LSAoMSAtIGZpdFtbXCJwXCJdXSkgKiBkbm9ybSh4LCBmaXRbW1wibXUyXCJdXSwgZml0W1tcInMyXCJdXSlcbnIgPC0gYSAvIChhICsgYilcbmMoZmluZXMgPSBzdW0ociA+IF9fX19fXyksIHVuY2VydGFpbiA9IHN1bShyID4gMC4xICYgciA8IDAuOSkpIn0=
+</script>
+</div>
+</div>
+<div class="hint webr-ojs-exercise exercise-hint d-none" data-exercise="ex4_10_classify">
+<p>A crystal is a fine if its responsibility is above 0.5: <code>sum(r &gt; 0.5)</code> counts them.</p>
+</div>
+<div class="webr-ojs-exercise exercise-solution d-none" data-exercise="ex4_10_classify">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">em_mix</span>(<span class="fl">0.5</span>, <span class="dv">100</span>, <span class="dv">30</span>, <span class="dv">200</span>, <span class="dv">30</span>)<span class="sc">$</span>par</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> fit[[<span class="st">"p"</span>]] <span class="sc">*</span> <span class="fu">dnorm</span>(x, fit[[<span class="st">"mu1"</span>]], fit[[<span class="st">"s1"</span>]])</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> fit[[<span class="st">"p"</span>]]) <span class="sc">*</span> <span class="fu">dnorm</span>(x, fit[[<span class="st">"mu2"</span>]], fit[[<span class="st">"s2"</span>]])</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> a <span class="sc">/</span> (a <span class="sc">+</span> b)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">fines =</span> <span class="fu">sum</span>(r <span class="sc">&gt;</span> <span class="fl">0.5</span>), <span class="at">uncertain =</span> <span class="fu">sum</span>(r <span class="sc">&gt;</span> <span class="fl">0.1</span> <span class="sc">&amp;</span> r <span class="sc">&lt;</span> <span class="fl">0.9</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>95 fines, 38% of the crystals, close to the mixture’s estimated 37.5%. Only 5 crystals are genuinely uncertain, all between 115 and 135 µm, near the point where the two weighted components cross, 127 µm. The populations are well separated, so a sieve at about 127 µm would remove the fines almost exactly. That’s the kind of practical answer a mixture model can give.</p>
+</div>
+<div class="cell" data-layout-align="center" data-exercise="ex4_10_classify" data-check="true">
+<script type="exercise-check-ex4_10_classify-contents">
+eyJhdHRyIjp7ImNoZWNrIjp0cnVlLCJlZGl0Ijp0cnVlLCJldmFsIjp0cnVlLCJleGVyY2lzZSI6ImV4NF8xMF9jbGFzc2lmeSIsImZpZy1oZWlnaHQiOiI0LjUiLCJmaWctd2lkdGgiOiI3IiwibWluLWxpbmVzIjoiNCIsInBlcnNpc3QiOnRydWV9LCJjb2RlIjoiaWYgKGlzLm51bWVyaWMoLnJlc3VsdCkgJiYgbGVuZ3RoKC5yZXN1bHQpID09IDIgJiYgaXNUUlVFKC5yZXN1bHRbWzFdXSA9PSA5NSkgJiYgaXNUUlVFKC5yZXN1bHRbWzJdXSA9PSA1KSkge1xuICBsaXN0KGNvcnJlY3QgPSBUUlVFLCBtZXNzYWdlID0gXCJDb3JyZWN0OiA5NSBmaW5lcywgYW5kIG9ubHkgNSB1bmNlcnRhaW4gY3J5c3RhbHMuXCIpXG59IGVsc2Uge1xuICBsaXN0KGNvcnJlY3QgPSBGQUxTRSwgbWVzc2FnZSA9IFwiTm90IHF1aXRlLiBDb3VudCByID4gMC41LlwiKVxufSJ9
+</script>
+</div>
+</section>
+<section id="quick-quiz" class="level2">
+<h2 class="anchored" data-anchor-id="quick-quiz">Quick quiz</h2>
+<div class="quiz">
+<p><strong>1.</strong> What does the E-step of EM compute?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The maximum likelihood estimates</label></li>
+<li><label><input type="checkbox" checked="">The expected values of the missing information (or of the sums that need it), given the data and the current estimates</label></li>
+<li><label><input type="checkbox">A random guess for the missing values</label></li>
+</ul>
+<div class="explain">
+<p>For censored data, the expected censored values. For a mixture, the probabilities of each label.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>2.</strong> Why is “drop the results below the detection limit” biased?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Because it reduces the sample size</label></li>
+<li><label><input type="checkbox" checked="">Because the dropped results are all low, so the average of the rest is too high</label></li>
+<li><label><input type="checkbox">Because the limit is uncertain</label></li>
+</ul>
+<div class="explain">
+<p>The missing values aren’t missing at random: they’re missing <em>because</em> they’re low.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>3.</strong> What happens to the log-likelihood from one EM iteration to the next?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">It can go up or down</label></li>
+<li><label><input type="checkbox" checked="">It never decreases</label></li>
+<li><label><input type="checkbox">It always doubles</label></li>
+</ul>
+<div class="explain">
+<p>That’s EM’s guarantee, and a good check of your code: if it ever falls, there’s a bug.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>4.</strong> In a two-component mixture, what’s a crystal’s responsibility?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Its size divided by the mean size</label></li>
+<li><label><input type="checkbox" checked="">The posterior probability that it came from the first component, given its size and the current estimates</label></li>
+<li><label><input type="checkbox">0 or 1, depending on which mean is closer</label></li>
+</ul>
+<div class="explain">
+<p>EM keeps the uncertainty: a crystal halfway between the populations counts half in each.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>5.</strong> EM started with two identical components stays stuck. Why?</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The data have only one population</label></li>
+<li><label><input type="checkbox" checked="">Every observation gets a responsibility of 0.5, so the M-step keeps both components identical</label></li>
+<li><label><input type="checkbox">EM needs at least 1,000 iterations</label></li>
+</ul>
+<div class="explain">
+<p>It’s a stationary point of the likelihood, but not a maximum. Start from different values.</p>
+</div>
+</div>
+<div class="quiz">
+<p><strong>6.</strong> Compared with Newton’s method, EM usually converges…</p>
+<ul class="task-list">
+<li><label><input type="checkbox">Faster, quadratically</label></li>
+<li><label><input type="checkbox" checked="">More slowly (linearly), but with simple, stable steps that never decrease the likelihood</label></li>
+<li><label><input type="checkbox">Only for normal distributions</label></li>
+</ul>
+<div class="explain">
+<p>Its rate depends on the share of information that’s missing.</p>
+</div>
+</div>
+</section>
+<section id="wrap-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrap-up">Wrap-up</h2>
+<p>You can now maximize likelihoods with missing pieces. Here’s what you’ve learned:</p>
+<ul>
+<li><strong>The EM algorithm</strong> alternates an E-step (fill in the missing information with its expectation, given the current estimates) and an M-step (maximize as if the data were complete).</li>
+<li><strong>Censored data:</strong> the expected value of a result below the limit comes from the truncated normal. The mean toluene level is 6.22 ppm with an SD of 2.48, where dropping the censored results gave 7.58 and half the limit 5.93 (with the wrong SD).</li>
+<li><strong>Mixtures:</strong> the responsibilities are posterior probabilities of the hidden labels. The crystallizer makes 37.5% fines of 85.5 µm, and a main population of 217 µm.</li>
+<li><strong>Convergence:</strong> the log-likelihood never falls. EM converges linearly, here in 14 to 17 rounds. Stop when the gain is tiny.</li>
+<li><strong>Starting values:</strong> identical components get stuck, swapped labels are harmless, and in general EM finds a local maximum, so try several starts.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Practice in RStudio (optional, about an hour)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Download <a href="data/impurity_lod.csv">impurity_lod.csv</a> and <a href="data/crystal_sizes.csv">crystal_sizes.csv</a> into your project’s <code>data-raw/</code> folder.</p>
+<ol type="1">
+<li><strong>How fast?</strong> Record <span class="math inline">\hat\mu</span> at every iteration of the censored EM, and plot <span class="math inline">|\hat\mu_t - \hat\mu|</span> on a log scale against <span class="math inline">t</span>. A straight line means linear convergence. Estimate the rate (the ratio of successive errors), and compare it with the share of censored results, 13/40.</li>
+<li><strong>A different limit.</strong> Pretend the limit were 7 ppm: censor every detected result below 7 too. Rerun the naive methods and EM. Which methods get worse as more data are censored? (The module project studies this properly, with a simulation.)</li>
+<li><strong>Three components.</strong> Extend <code>em_mix()</code> to three components, and fit it to the crystal sizes. Does the log-likelihood improve by much? Compare the two models with AIC (Lesson 2.12): <span class="math inline">\text{AIC} = -2\ell + 2 \times</span> (number of parameters).</li>
+<li><strong>The mclust way.</strong> The <code>mclust</code> package fits mixtures with EM and chooses the number of components by BIC. Install it, run <code>summary(mclust::Mclust(crystals$size_um))</code>, and compare its answer with yours.</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Key words from this lesson
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<dl>
+<dt>EM algorithm</dt>
+<dd>
+An algorithm for maximum likelihood with missing information, alternating an expectation step and a maximization step.
+</dd>
+<dt>Censored data</dt>
+<dd>
+Values known only to lie in a range, such as results below a detection limit.
+</dd>
+<dt>Detection limit</dt>
+<dd>
+The lowest value a measurement method can report reliably. Results below it are reported as “&lt;limit”.
+</dd>
+<dt>Latent variable</dt>
+<dd>
+A variable that every observation has but that wasn’t observed, such as the population a crystal came from.
+</dd>
+<dt>Mixture model</dt>
+<dd>
+A model in which each observation comes from one of several distributions, each with its own probability.
+</dd>
+<dt>Responsibility</dt>
+<dd>
+In a mixture, the posterior probability that an observation came from a given component.
+</dd>
+<dt>Label switching</dt>
+<dd>
+The same mixture fit, with the components numbered in a different order.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Want to read more?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Roger Peng, <a href="https://bookdown.org/rdpeng/advstatcomp/"><em>Advanced Statistical Computing</em></a>, chapter 4, <a href="https://bookdown.org/rdpeng/advstatcomp/the-em-algorithm.html">“The EM algorithm”</a>, with the <a href="https://bookdown.org/rdpeng/advstatcomp/canonical-examples.html">two-part normal mixture and censored data</a> as its examples, and why the likelihood never falls.</li>
+<li>Arthur Dempster, Nan Laird and Donald Rubin, “Maximum likelihood from incomplete data via the EM algorithm”, <em>Journal of the Royal Statistical Society B</em> (1977). The paper that named EM and proved its properties. One of the most cited papers in statistics.</li>
+<li>Dennis Helsel, <em>Statistics for Censored Environmental Data Using Minitab and R</em> (Wiley, 2nd edition, 2012). Detection limits in practice, and why substitution fails. Not free, but the module project draws on its ideas.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+<script type="webr-data">
+eyJvcHRpb25zIjp7ImJhc2VVcmwiOiJodHRwczovL3dlYnIuci13YXNtLm9yZy92MC42LjAvIn0sInBhY2thZ2VzIjp7InBrZ3MiOlsiZXZhbHVhdGUiLCJrbml0ciIsImh0bWx0b29scyIsInJlYWRyIl0sInJlcG9zIjpbXX0sInJlbmRlcl9kZiI6ImRlZmF1bHQifQ==
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3siY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE2ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE2ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTYgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE2LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTQ7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzE0ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTQtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xNC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzE0ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xNCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTQgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzE0LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTI7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEyID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTItY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEyID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMiwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEyLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfMTA7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici0xMCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzEwID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItMTAtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici0xMC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzEwID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl8xMCwge30pO1xuX3dlYnJfZmVlZGJhY2tfMTAgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzEwLmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC04IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV84O1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItOCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzggPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici04LWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItOC1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzggPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzgsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzggPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzguZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItd2lkZ2V0LTYiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJ7XG4gIC8vIFdhaXQgZm9yIG91dHB1dCB0byBiZSB3cml0dGVuIHRvIHRoZSBET00sIHRoZW4gdHJpZ2dlciB3aWRnZXQgcmVuZGVyaW5nXG4gIGF3YWl0IF93ZWJyX3ZhbHVlXzY7XG4gIGlmICh3aW5kb3cuSFRNTFdpZGdldHMpIHtcbiAgICB3aW5kb3cuSFRNTFdpZGdldHMuc3RhdGljUmVuZGVyKCk7XG4gIH1cbiAgaWYgKHdpbmRvdy5QYWdlZFRhYmxlRG9jKSB7XG4gICAgd2luZG93LlBhZ2VkVGFibGVEb2MuaW5pdEFsbCgpO1xuICB9XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici02IiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldCIsInNvdXJjZSI6InZpZXdvZiBfd2Vicl9lZGl0b3JfNiA9IHtcbiAgY29uc3QgeyBXZWJSRXhlcmNpc2VFZGl0b3IsIGI2NERlY29kZSB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3Qgc2NyaXB0Q29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLTYtY29udGVudHNcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBibG9jayA9IEpTT04ucGFyc2UoYjY0RGVjb2RlKHNjcmlwdENvbnRlbnQpKTtcblxuICAvLyBEZWZhdWx0IGV4ZXJjaXNlIGNvbmZpZ3VyYXRpb25cbiAgY29uc3Qgb3B0aW9ucyA9IE9iamVjdC5hc3NpZ24oXG4gICAge1xuICAgICAgaWQ6IFwid2Vici02LWNvbnRlbnRzXCIsXG4gICAgICBlbnZpcjogYGV4ZXJjaXNlLWVudi0ke2Jsb2NrLmF0dHIuZXhlcmNpc2V9YCxcbiAgICAgIGVycm9yOiBmYWxzZSxcbiAgICAgIGNhcHRpb246ICdFeGVyY2lzZScsXG4gICAgfSxcbiAgICBibG9jay5hdHRyXG4gICk7XG5cbiAgY29uc3QgZWRpdG9yID0gbmV3IFdlYlJFeGVyY2lzZUVkaXRvcih3ZWJST2pzLndlYlJQcm9taXNlLCBibG9jay5jb2RlLCBvcHRpb25zKTtcbiAgcmV0dXJuIGVkaXRvci5jb250YWluZXI7XG59XG52aWV3b2YgX3dlYnJfdmFsdWVfNiA9IHdlYlJPanMucHJvY2Vzcyhfd2Vicl9lZGl0b3JfNiwge30pO1xuX3dlYnJfZmVlZGJhY2tfNiA9IHtcbiAgY29uc3QgeyBXZWJSR3JhZGVyIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBlbXB0eUZlZWRiYWNrID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7XG5cbiAgY29uc3QgZ3JhZGVyID0gbmV3IFdlYlJHcmFkZXIoX3dlYnJfdmFsdWVfNi5ldmFsdWF0b3IpO1xuICBjb25zdCBmZWVkYmFjayA9IGF3YWl0IGdyYWRlci5ncmFkZUV4ZXJjaXNlKCk7XG4gIGlmICghZmVlZGJhY2spIHJldHVybiBlbXB0eUZlZWRiYWNrO1xuICByZXR1cm4gZmVlZGJhY2s7XG59XG4ifSx7ImNlbGxOYW1lIjoid2Vici13aWRnZXQtNCIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IntcbiAgLy8gV2FpdCBmb3Igb3V0cHV0IHRvIGJlIHdyaXR0ZW4gdG8gdGhlIERPTSwgdGhlbiB0cmlnZ2VyIHdpZGdldCByZW5kZXJpbmdcbiAgYXdhaXQgX3dlYnJfdmFsdWVfNDtcbiAgaWYgKHdpbmRvdy5IVE1MV2lkZ2V0cykge1xuICAgIHdpbmRvdy5IVE1MV2lkZ2V0cy5zdGF0aWNSZW5kZXIoKTtcbiAgfVxuICBpZiAod2luZG93LlBhZ2VkVGFibGVEb2MpIHtcbiAgICB3aW5kb3cuUGFnZWRUYWJsZURvYy5pbml0QWxsKCk7XG4gIH1cbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLTQiLCJpbmxpbmUiOmZhbHNlLCJtZXRob2ROYW1lIjoiaW50ZXJwcmV0Iiwic291cmNlIjoidmlld29mIF93ZWJyX2VkaXRvcl80ID0ge1xuICBjb25zdCB7IFdlYlJFeGVyY2lzZUVkaXRvciwgYjY0RGVjb2RlIH0gPSB3aW5kb3cuX2V4ZXJjaXNlX29qc19ydW50aW1lO1xuICBjb25zdCBzY3JpcHRDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcIndlYnItNC1jb250ZW50c1xcXCJdYCkudGV4dENvbnRlbnQ7XG4gIGNvbnN0IGJsb2NrID0gSlNPTi5wYXJzZShiNjREZWNvZGUoc2NyaXB0Q29udGVudCkpO1xuXG4gIC8vIERlZmF1bHQgZXhlcmNpc2UgY29uZmlndXJhdGlvblxuICBjb25zdCBvcHRpb25zID0gT2JqZWN0LmFzc2lnbihcbiAgICB7XG4gICAgICBpZDogXCJ3ZWJyLTQtY29udGVudHNcIixcbiAgICAgIGVudmlyOiBgZXhlcmNpc2UtZW52LSR7YmxvY2suYXR0ci5leGVyY2lzZX1gLFxuICAgICAgZXJyb3I6IGZhbHNlLFxuICAgICAgY2FwdGlvbjogJ0V4ZXJjaXNlJyxcbiAgICB9LFxuICAgIGJsb2NrLmF0dHJcbiAgKTtcblxuICBjb25zdCBlZGl0b3IgPSBuZXcgV2ViUkV4ZXJjaXNlRWRpdG9yKHdlYlJPanMud2ViUlByb21pc2UsIGJsb2NrLmNvZGUsIG9wdGlvbnMpO1xuICByZXR1cm4gZWRpdG9yLmNvbnRhaW5lcjtcbn1cbnZpZXdvZiBfd2Vicl92YWx1ZV80ID0gd2ViUk9qcy5wcm9jZXNzKF93ZWJyX2VkaXRvcl80LCB7fSk7XG5fd2Vicl9mZWVkYmFja180ID0ge1xuICBjb25zdCB7IFdlYlJHcmFkZXIgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IGVtcHR5RmVlZGJhY2sgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTtcblxuICBjb25zdCBncmFkZXIgPSBuZXcgV2ViUkdyYWRlcihfd2Vicl92YWx1ZV80LmV2YWx1YXRvcik7XG4gIGNvbnN0IGZlZWRiYWNrID0gYXdhaXQgZ3JhZGVyLmdyYWRlRXhlcmNpc2UoKTtcbiAgaWYgKCFmZWVkYmFjaykgcmV0dXJuIGVtcHR5RmVlZGJhY2s7XG4gIHJldHVybiBmZWVkYmFjaztcbn1cbiJ9LHsiY2VsbE5hbWUiOiJ3ZWJyLXdpZGdldC0yIiwiaW5saW5lIjpmYWxzZSwibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoie1xuICAvLyBXYWl0IGZvciBvdXRwdXQgdG8gYmUgd3JpdHRlbiB0byB0aGUgRE9NLCB0aGVuIHRyaWdnZXIgd2lkZ2V0IHJlbmRlcmluZ1xuICBhd2FpdCBfd2Vicl92YWx1ZV8yO1xuICBpZiAod2luZG93LkhUTUxXaWRnZXRzKSB7XG4gICAgd2luZG93LkhUTUxXaWRnZXRzLnN0YXRpY1JlbmRlcigpO1xuICB9XG4gIGlmICh3aW5kb3cuUGFnZWRUYWJsZURvYykge1xuICAgIHdpbmRvdy5QYWdlZFRhYmxlRG9jLmluaXRBbGwoKTtcbiAgfVxufVxuIn0seyJjZWxsTmFtZSI6IndlYnItMiIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJzb3VyY2UiOiJ2aWV3b2YgX3dlYnJfZWRpdG9yXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkV4ZXJjaXNlRWRpdG9yLCBiNjREZWNvZGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWU7XG4gIGNvbnN0IHNjcmlwdENvbnRlbnQgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBzY3JpcHRbdHlwZT1cXFwid2Vici0yLWNvbnRlbnRzXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgYmxvY2sgPSBKU09OLnBhcnNlKGI2NERlY29kZShzY3JpcHRDb250ZW50KSk7XG5cbiAgLy8gRGVmYXVsdCBleGVyY2lzZSBjb25maWd1cmF0aW9uXG4gIGNvbnN0IG9wdGlvbnMgPSBPYmplY3QuYXNzaWduKFxuICAgIHtcbiAgICAgIGlkOiBcIndlYnItMi1jb250ZW50c1wiLFxuICAgICAgZW52aXI6IGBleGVyY2lzZS1lbnYtJHtibG9jay5hdHRyLmV4ZXJjaXNlfWAsXG4gICAgICBlcnJvcjogZmFsc2UsXG4gICAgICBjYXB0aW9uOiAnRXhlcmNpc2UnLFxuICAgIH0sXG4gICAgYmxvY2suYXR0clxuICApO1xuXG4gIGNvbnN0IGVkaXRvciA9IG5ldyBXZWJSRXhlcmNpc2VFZGl0b3Iod2ViUk9qcy53ZWJSUHJvbWlzZSwgYmxvY2suY29kZSwgb3B0aW9ucyk7XG4gIHJldHVybiBlZGl0b3IuY29udGFpbmVyO1xufVxudmlld29mIF93ZWJyX3ZhbHVlXzIgPSB3ZWJST2pzLnByb2Nlc3MoX3dlYnJfZWRpdG9yXzIsIHt9KTtcbl93ZWJyX2ZlZWRiYWNrXzIgPSB7XG4gIGNvbnN0IHsgV2ViUkdyYWRlciB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcbiAgY29uc3QgZW1wdHlGZWVkYmFjayA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpO1xuXG4gIGNvbnN0IGdyYWRlciA9IG5ldyBXZWJSR3JhZGVyKF93ZWJyX3ZhbHVlXzIuZXZhbHVhdG9yKTtcbiAgY29uc3QgZmVlZGJhY2sgPSBhd2FpdCBncmFkZXIuZ3JhZGVFeGVyY2lzZSgpO1xuICBpZiAoIWZlZWRiYWNrKSByZXR1cm4gZW1wdHlGZWVkYmFjaztcbiAgcmV0dXJuIGZlZWRiYWNrO1xufVxuIn0seyJjZWxsTmFtZSI6IndlYnItcHJlbHVkZSIsImlubGluZSI6ZmFsc2UsIm1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6IndlYlJPanMgPSB7XG4gIGNvbnN0IHsgV2ViUiwgQ2hhbm5lbFR5cGUgfSA9IHdpbmRvdy5fZXhlcmNpc2Vfb2pzX3J1bnRpbWUuV2ViUjtcbiAgY29uc3Qge1xuICAgIFdlYlJFdmFsdWF0b3IsXG4gICAgV2ViUkVudmlyb25tZW50TWFuYWdlcixcbiAgICBzZXR1cFIsXG4gICAgYjY0RGVjb2RlLFxuICAgIGNvbGxhcHNlUGF0aFxuICB9ID0gd2luZG93Ll9leGVyY2lzZV9vanNfcnVudGltZTtcblxuICBjb25zdCBzdGF0dXNDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctc3RhdHVzXCIpO1xuICBjb25zdCBpbmRpY2F0b3JDb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChcImV4ZXJjaXNlLWxvYWRpbmctaW5kaWNhdG9yXCIpO1xuICBpbmRpY2F0b3JDb250YWluZXIuY2xhc3NMaXN0LnJlbW92ZShcImQtbm9uZVwiKTtcblxuICBsZXQgc3RhdHVzVGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgc3RhdHVzVGV4dC5jbGFzc0xpc3QgPSBcImV4ZXJjaXNlLWxvYWRpbmctZGV0YWlsc1wiO1xuICBzdGF0dXNUZXh0ID0gc3RhdHVzQ29udGFpbmVyLmFwcGVuZENoaWxkKHN0YXR1c1RleHQpO1xuICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYEluaXRpYWxpc2VgO1xuXG4gIC8vIEhvaXN0IGluZGljYXRvciBvdXQgZnJvbSBmaW5hbCBzbGlkZSB3aGVuIHJ1bm5pbmcgdW5kZXIgcmV2ZWFsXG4gIGNvbnN0IHJldmVhbFN0YXR1cyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoXCIucmV2ZWFsIC5leGVyY2lzZS1sb2FkaW5nLWluZGljYXRvclwiKTtcbiAgaWYgKHJldmVhbFN0YXR1cykge1xuICAgIHJldmVhbFN0YXR1cy5yZW1vdmUoKTtcbiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKFwiLnJldmVhbCA+IC5zbGlkZXNcIikuYXBwZW5kQ2hpbGQocmV2ZWFsU3RhdHVzKTtcbiAgfVxuXG4gIC8vIE1ha2UgYW55IHJldmVhbCBzbGlkZXMgd2l0aCBsaXZlIGNlbGxzIHNjcm9sbGFibGVcbiAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChcIi5yZXZlYWwgLmV4ZXJjaXNlLWNlbGxcIikuZm9yRWFjaCgoZWwpID0+IHtcbiAgICBlbC5jbG9zZXN0KCdzZWN0aW9uLnNsaWRlJykuY2xhc3NMaXN0LmFkZChcInNjcm9sbGFibGVcIik7XG4gIH0pXG5cbiAgLy8gd2ViUiBzdXBwbGVtZW50YWwgZGF0YSBhbmQgb3B0aW9uc1xuICBjb25zdCBkYXRhQ29udGVudCA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYHNjcmlwdFt0eXBlPVxcXCJ3ZWJyLWRhdGFcXFwiXWApLnRleHRDb250ZW50O1xuICBjb25zdCBkYXRhID0gSlNPTi5wYXJzZShiNjREZWNvZGUoZGF0YUNvbnRlbnQpKTtcblxuICAvLyBHcmFiIGxpc3Qgb2YgcmVzb3VyY2VzIHRvIGJlIGRvd25sb2FkZWRcbiAgY29uc3QgZmlsZXNDb250ZW50ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcihgc2NyaXB0W3R5cGU9XFxcInZmcy1maWxlXFxcIl1gKS50ZXh0Q29udGVudDtcbiAgY29uc3QgZmlsZXMgPSBKU09OLnBhcnNlKGI2NERlY29kZShmaWxlc0NvbnRlbnQpKTtcblxuICAvLyBJbml0aWFsaXNlIHdlYlIgYW5kIHNldHVwIGZvciBSIGNvZGUgZXZhbHVhdGlvblxuICBsZXQgd2ViUlByb21pc2UgPSAoYXN5bmMgKHdlYlIpID0+IHtcbiAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHdlYlJgO1xuICAgIGF3YWl0IHdlYlIuaW5pdCgpO1xuXG4gICAgLy8gSW5zdGFsbCBwcm92aWRlZCBsaXN0IG9mIHBhY2thZ2VzXG4gICAgLy8gRW5zdXJlIHdlYlIgZGVmYXVsdCByZXBvIGlzIGluY2x1ZGVkXG4gICAgZGF0YS5wYWNrYWdlcy5yZXBvcy5wdXNoKFwiaHR0cHM6Ly9yZXBvLnItd2FzbS5vcmdcIilcbiAgICBhd2FpdCBkYXRhLnBhY2thZ2VzLnBrZ3MubWFwKChwa2cpID0+ICgpID0+IHtcbiAgICAgIHN0YXR1c1RleHQudGV4dENvbnRlbnQgPSBgRG93bmxvYWRpbmcgcGFja2FnZTogJHtwa2d9YDtcbiAgICAgIHJldHVybiB3ZWJSLmV2YWxSVm9pZChgXG4gICAgICAgIHdlYnI6Omluc3RhbGwocGtnLCByZXBvcyA9IHJlcG9zKVxuICAgICAgICBsaWJyYXJ5KHBrZywgY2hhcmFjdGVyLm9ubHkgPSBUUlVFKVxuICAgICAgYCwgeyBlbnY6IHtcbiAgICAgICAgcGtnOiBwa2csXG4gICAgICAgIHJlcG9zOiBkYXRhLnBhY2thZ2VzLnJlcG9zLFxuICAgICAgfX0pO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgLy8gRG93bmxvYWQgYW5kIGluc3RhbGwgcmVzb3VyY2VzXG4gICAgYXdhaXQgZmlsZXMubWFwKChmaWxlKSA9PiBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBuYW1lID0gZmlsZS5zdWJzdHJpbmcoZmlsZS5sYXN0SW5kZXhPZignLycpICsgMSk7XG4gICAgICBzdGF0dXNUZXh0LnRleHRDb250ZW50ID0gYERvd25sb2FkaW5nIHJlc291cmNlOiAke25hbWV9YDtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goZmlsZSk7XG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgQ2FuJ3QgZG93bmxvYWQgXFxgJHtmaWxlfVxcYC4gRXJyb3IgJHtyZXNwb25zZS5zdGF0dXN9OiBcIiR7cmVzcG9uc2Uuc3RhdHVzVGV4dH1cIi5gKTtcbiAgICAgIH1cbiAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5hcnJheUJ1ZmZlcigpO1xuXG4gICAgICAvLyBTdG9yZSBVUkxzIGluIHRoZSBjd2Qgd2l0aG91dCBhbnkgc3ViZGlyZWN0b3J5IHN0cnVjdHVyZVxuICAgICAgaWYgKGZpbGUuaW5jbHVkZXMoXCI6Ly9cIikpIHtcbiAgICAgICAgZmlsZSA9IG5hbWU7XG4gICAgICB9XG5cbiAgICAgIC8vIENvbGxhcHNlIGhpZ2hlciBkaXJlY3Rvcnkgc3RydWN0dXJlXG4gICAgICBmaWxlID0gY29sbGFwc2VQYXRoKGZpbGUpO1xuXG4gICAgICAvLyBDcmVhdGUgZGlyZWN0b3J5IHRyZWUsIGlnbm9yaW5nIFwiZGlyZWN0b3J5IGV4aXN0c1wiIFZGUyBlcnJvcnNcbiAgICAgIGNvbnN0IHBhcnRzID0gZmlsZS5zcGxpdCgnLycpLnNsaWNlKDAsIC0xKTtcbiAgICAgIGxldCBwYXRoID0gJyc7XG4gICAgICB3aGlsZSAocGFydHMubGVuZ3RoID4gMCkge1xuICAgICAgICBwYXRoICs9IHBhcnRzLnNoaWZ0KCkgKyAnLyc7XG4gICAgICAgIGNvbnN0IGFuYWx5c2lzID0gYXdhaXQgd2ViUi5GUy5hbmFseXplUGF0aChwYXRoKTtcbiAgICAgICAgaWYgKCFhbmFseXNpcy5leGlzdHMpIHtcbiAgICAgICAgICB0cnkge1xuICAgICAgICAgICAgYXdhaXQgd2ViUi5GUy5ta2RpcihwYXRoKTtcbiAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICB0aHJvdyBuZXcgRXJyb3IoYEZpbGVzeXN0ZW0gRXJyb3I6IFwiJHtlLm1lc3NhZ2V9XCIuYCk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIC8vIFdyaXRlIHRoaXMgZmlsZSB0byB0aGUgVkZTXG4gICAgICByZXR1cm4gYXdhaXQgd2ViUi5GUy53cml0ZUZpbGUoZmlsZSwgbmV3IFVpbnQ4QXJyYXkoZGF0YSkpO1xuICAgIH0pLnJlZHVjZSgoY3VyLCBuZXh0KSA9PiBjdXIudGhlbihuZXh0KSwgUHJvbWlzZS5yZXNvbHZlKCkpO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBJbnN0YWxsaW5nIHdlYlIgc2hpbXNgO1xuICAgIGF3YWl0IHdlYlIuZXZhbFJWb2lkKGB3ZWJyOjpzaGltX2luc3RhbGwoKWApO1xuXG4gICAgc3RhdHVzVGV4dC50ZXh0Q29udGVudCA9IGBXZWJSIGVudmlyb25tZW50IHNldHVwYDtcbiAgICBhd2FpdCBzZXR1cFIod2ViUiwgZGF0YSk7XG5cbiAgICBzdGF0dXNUZXh0LnJlbW92ZSgpO1xuICAgIGlmIChzdGF0dXNDb250YWluZXIuY2hpbGRyZW4ubGVuZ3RoID09IDApIHtcbiAgICAgIHN0YXR1c0NvbnRhaW5lci5wYXJlbnROb2RlLnJlbW92ZSgpO1xuICAgIH1cbiAgICByZXR1cm4gd2ViUjtcbiAgfSkobmV3IFdlYlIoZGF0YS5vcHRpb25zKSk7XG5cbiAgLy8gS2VlcCB0cmFjayBvZiBpbml0aWFsIE9KUyBibG9jayByZW5kZXJcbiAgY29uc3QgcmVuZGVyZWRPanMgPSB7fTtcblxuICBjb25zdCBwcm9jZXNzID0gYXN5bmMgKGNvbnRleHQsIGlucHV0cykgPT4ge1xuICAgIGNvbnN0IHdlYlIgPSBhd2FpdCB3ZWJSUHJvbWlzZTtcbiAgICBjb25zdCBldmFsdWF0b3IgPSBuZXcgV2ViUkV2YWx1YXRvcih3ZWJSLCBjb250ZXh0KVxuICAgIGF3YWl0IGV2YWx1YXRvci5wcm9jZXNzKGlucHV0cyk7XG4gICAgcmV0dXJuIGV2YWx1YXRvci5jb250YWluZXI7XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHByb2Nlc3MsXG4gICAgd2ViUlByb21pc2UsXG4gICAgcmVuZGVyZWRPanMsXG4gIH07XG59XG4ifV19
+</script>
+<div id="exercise-loading-indicator" class="exercise-loading-indicator d-none d-flex align-items-center gap-2">
+<div id="exercise-loading-status" class="d-flex gap-2">
+
+</div>
+<div class="spinner-grow spinner-grow-sm">
+
+</div>
+</div>
+<script type="vfs-file">
+WyJkYXRhL2ltcHVyaXR5X2xvZC5jc3YiLCJkYXRhL2NyeXN0YWxfc2l6ZXMuY3N2Il0=
+</script>
+</section>
+
+</main> <!-- /main -->
+<script>
+
+/* Course interactivity: focus mode for lessons (one step at a time), the course map
+
+   drawer, quizzes, progress, the home page panels and study-plan dates.
+
+   Everything a learner does is stored only in this browser (localStorage). */
+
+(function () {
+
+  "use strict";
+
+
+
+  var STORE = "sds-progress-v1";
+
+  var LAST = "sds-last-lesson-v1";
+
+  var PLAN = "sds-plan-start-v1";
+
+  var STEP = "sds-step-v1";
+
+  var VIEW = "sds-view-all-v1";
+
+
+
+  function read(key, fallback) {
+
+    try {
+
+      var v = window.localStorage.getItem(key);
+
+      return v ? JSON.parse(v) : fallback;
+
+    } catch (e) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+
+  function write(key, value) {
+
+    try {
+
+      window.localStorage.setItem(key, JSON.stringify(value));
+
+    } catch (e) { /* storage unavailable: progress just isn't remembered */ }
+
+  }
+
+
+
+  function el(tag, attrs, html) {
+
+    var node = document.createElement(tag);
+
+    if (attrs) for (var k in attrs) node.setAttribute(k, attrs[k]);
+
+    if (html != null) node.innerHTML = html;
+
+    return node;
+
+  }
+
+
+
+  function esc(s) {
+
+    return String(s).replace(/[&<>"]/g, function (c) {
+
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+
+    });
+
+  }
+
+
+
+  var offsetMeta = document.querySelector('meta[name="quarto:offset"]');
+
+  var ROOT = offsetMeta ? offsetMeta.getAttribute("content") : "./";
+
+
+
+  // "00-foundations/01-welcome-to-r" for any URL that points at a lesson page.
+
+  function lessonId(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\/(\d\d-[a-z0-9-]+?)(?:\.html)?(?:[?#].*)?$/i.exec(url || "");
+
+    return m ? m[1] + "/" + m[2] : null;
+
+  }
+
+
+
+  function moduleDirOf(url) {
+
+    var m = /\/modules\/(\d\d-[a-z0-9-]+)\//i.exec(url || "");
+
+    return m ? m[1] : null;
+
+  }
+
+
+
+  var progress = read(STORE, {}) || {};
+
+  var here = lessonId(window.location.href);
+
+  var hereModule = moduleDirOf(window.location.href);
+
+
+
+  // ---------- Home-screen app support ----------
+
+  (function addAppLinks() {
+
+    function add(tag, attrs) { document.head.appendChild(el(tag, attrs)); }
+
+    add("link", { rel: "manifest", href: ROOT + "manifest.webmanifest" });
+
+    add("link", { rel: "apple-touch-icon", href: ROOT + "assets/apple-touch-icon.png" });
+
+    add("meta", { name: "theme-color", content: "#D4537E" });
+
+    add("meta", { name: "apple-mobile-web-app-title", content: "Stats course" });
+
+  })();
+
+
+
+  // ---------- Course map data ----------
+
+  var mapPromise = null;
+
+  function courseMap() {
+
+    if (!mapPromise) {
+
+      mapPromise = fetch(ROOT + "course-map.json")
+
+        .then(function (r) { return r.ok ? r.json() : null; })
+
+        .catch(function () { return null; });
+
+    }
+
+    return mapPromise;
+
+  }
+
+
+
+  function lessonHref(mod, lesson) { return ROOT + "modules/" + mod.dir + "/" + lesson.slug + ".html"; }
+
+  function lessonKey(mod, lesson) { return mod.dir + "/" + lesson.slug; }
+
+  function doneCount(mod) {
+
+    return mod.lessons.filter(function (l) { return progress[lessonKey(mod, l)]; }).length;
+
+  }
+
+
+
+  function currentModule(map) {
+
+    if (!map) return null;
+
+    var dir = hereModule;
+
+    if (!dir) {
+
+      var last = read(LAST, null);
+
+      if (last && last.id) dir = last.id.split("/")[0];
+
+    }
+
+    for (var i = 0; i < map.modules.length; i++) if (map.modules[i].dir === dir) return map.modules[i];
+
+    return map.modules[0];
+
+  }
+
+
+
+  // The next thing to study in a module: the first ready lesson that isn't complete.
+
+  function nextUp(map, mod) {
+
+    for (var i = 0; i < mod.lessons.length; i++) {
+
+      var l = mod.lessons[i];
+
+      if (l.ready && !progress[lessonKey(mod, l)]) return { mod: mod, lesson: l };
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // The lesson (or project) that follows the current lesson.
+
+  function followingLesson(map) {
+
+    if (!map || !here) return null;
+
+    var parts = here.split("/");
+
+    for (var i = 0; i < map.modules.length; i++) {
+
+      var mod = map.modules[i];
+
+      if (mod.dir !== parts[0]) continue;
+
+      for (var j = 0; j < mod.lessons.length; j++) {
+
+        if (mod.lessons[j].slug !== parts[1]) continue;
+
+        var nxt = mod.lessons[j + 1];
+
+        if (nxt && nxt.ready) {
+
+          return { href: lessonHref(mod, nxt), label: mod.id + "." + nxt.n + " " + nxt.title };
+
+        }
+
+        if (!nxt && mod.project && mod.project.ready) {
+
+          return { href: ROOT + "modules/" + mod.dir + "/project.html", label: "Module " + mod.id + " project" };
+
+        }
+
+        return null;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+
+
+  // ---------- Progress marks on links and bars ----------
+
+  function refreshProgress() {
+
+    var links = document.querySelectorAll("a[href]");
+
+    for (var i = 0; i < links.length; i++) {
+
+      var raw = links[i].getAttribute("href") || "";
+
+      if (raw.charAt(0) === "#" || raw.indexOf("#") !== -1) continue;
+
+      if (links[i].closest(".sds-drawer, .sds-finish, .sds-hero, .sds-next, .sds-stepnav")) continue;
+
+      var id = lessonId(links[i].href);
+
+      if (id) links[i].classList.toggle("lesson-done", !!progress[id]);
+
+    }
+
+    function countDone(prefix) {
+
+      return Object.keys(progress).filter(function (k) { return !prefix || k.indexOf(prefix) === 0; }).length;
+
+    }
+
+    function setBar(track, done, total) {
+
+      var fill = track.querySelector(".progress-fill");
+
+      if (fill) fill.style.width = (total ? Math.min(100, Math.round(100 * done / total)) : 0) + "%";
+
+      track.setAttribute("role", "img");
+
+      track.setAttribute("aria-label", done + " of " + total + " lessons complete");
+
+    }
+
+    document.querySelectorAll("[data-module-progress]").forEach(function (t) {
+
+      setBar(t, countDone(t.getAttribute("data-module-progress") + "/"), parseInt(t.getAttribute("data-total"), 10) || 0);
+
+    });
+
+    document.querySelectorAll("[data-progress-label]").forEach(function (t) {
+
+      var total = parseInt(t.getAttribute("data-total"), 10) || 0;
+
+      t.textContent = countDone(t.getAttribute("data-progress-label") + "/") + " of " + total + " lessons complete";
+
+    });
+
+  }
+
+
+
+  // ---------- Quizzes (task lists inside a .quiz div; "- [x]" marks the answer) ----------
+
+  function setupQuizzes() {
+
+    document.querySelectorAll("div.quiz").forEach(buildQuiz);
+
+  }
+
+
+
+  function buildQuiz(quiz) {
+
+    var list = quiz.querySelector("ul.task-list") || quiz.querySelector("ul");
+
+    if (!list) return;
+
+    var explain = quiz.querySelector(".explain");
+
+    var options = el("div", { "class": "quiz-options", role: "group" });
+
+    var feedback = el("p", { "class": "quiz-feedback", "aria-live": "polite" });
+
+    var retry = el("button", { type: "button", "class": "btn btn-sm btn-outline-secondary quiz-retry" }, "Try again");
+
+    retry.hidden = true;
+
+    var buttons = [];
+
+
+
+    Array.prototype.slice.call(list.children).forEach(function (li) {
+
+      var box = li.querySelector('input[type="checkbox"]');
+
+      var correct = !!(box && (box.checked || box.hasAttribute("checked")));
+
+      if (box) box.parentNode.removeChild(box);
+
+      var holder = li.querySelector("label") || li;
+
+      var btn = el("button", { type: "button", "class": "quiz-option", "data-correct": correct ? "1" : "0" }, holder.innerHTML.trim());
+
+      btn.addEventListener("click", function () { answer(btn); });
+
+      buttons.push(btn);
+
+    });
+
+
+
+    // Show the options in a random order, so that the position of the answer gives nothing away
+
+    for (var i = buttons.length - 1; i > 0; i--) {
+
+      var j = Math.floor(Math.random() * (i + 1));
+
+      var swap = buttons[i]; buttons[i] = buttons[j]; buttons[j] = swap;
+
+    }
+
+    buttons.forEach(function (b) { options.appendChild(b); });
+
+
+
+    function answer(chosen) {
+
+      var right = chosen.getAttribute("data-correct") === "1";
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = true;
+
+        if (b.getAttribute("data-correct") === "1") b.classList.add("is-correct");
+
+      });
+
+      if (!right) chosen.classList.add("is-wrong");
+
+      feedback.textContent = right ? "✓ Nailed it!" : "Not quite. The right answer is highlighted.";
+
+      feedback.className = "quiz-feedback " + (right ? "good" : "bad");
+
+      quiz.classList.add("answered");
+
+      retry.hidden = right;
+
+    }
+
+
+
+    retry.addEventListener("click", function () {
+
+      options.querySelectorAll("button.quiz-option").forEach(function (b) {
+
+        b.disabled = false;
+
+        b.classList.remove("is-correct", "is-wrong");
+
+      });
+
+      feedback.textContent = "";
+
+      feedback.className = "quiz-feedback";
+
+      quiz.classList.remove("answered");
+
+      retry.hidden = true;
+
+    });
+
+
+
+    list.parentNode.replaceChild(options, list);
+
+    options.parentNode.insertBefore(feedback, options.nextSibling);
+
+    feedback.parentNode.insertBefore(retry, feedback.nextSibling);
+
+    if (explain) quiz.appendChild(explain);
+
+    quiz.classList.add("quiz-ready");
+
+  }
+
+
+
+  // ---------- Focus mode: one lesson step at a time ----------
+
+  function setupSteps() {
+
+    if (!here) return;
+
+    var main = document.getElementById("quarto-document-content");
+
+    if (!main) return;
+
+    var sections = Array.prototype.filter.call(main.children, function (c) {
+
+      return c.tagName === "SECTION" && c.classList.contains("level2");
+
+    });
+
+    if (sections.length < 2) return;
+
+
+
+    var intro = el("div", { "class": "sds-step sds-step-intro" });
+
+    var nodes = [];
+
+    for (var n = main.firstChild; n && n !== sections[0]; n = n.nextSibling) nodes.push(n);
+
+    nodes.forEach(function (node) { intro.appendChild(node); });
+
+    main.insertBefore(intro, sections[0]);
+
+    sections.forEach(function (s) { s.classList.add("sds-step"); });
+
+    var steps = [intro].concat(sections);
+
+    var titles = steps.map(function (s, i) {
+
+      if (i === 0) return "Introduction";
+
+      var h = s.querySelector("h2");
+
+      return h ? h.textContent.trim() : "Step " + (i + 1);
+
+    });
+
+
+
+    var h1 = intro.querySelector("h1.title");
+
+    var lessonTitle = h1 ? h1.textContent.trim() : document.title;
+
+
+
+    // Lesson bar
+
+    var bar = el("div", { "class": "sds-lessonbar" });
+
+    var row = el("div", { "class": "sds-lessonbar-row" });
+
+    var titleEl = el("div", { "class": "sds-lb-title" }, esc(lessonTitle));
+
+    var stepsBtn = el("button", { type: "button", "class": "sds-lb-steps", "aria-expanded": "false" });
+
+    row.appendChild(titleEl);
+
+    row.appendChild(stepsBtn);
+
+    var track = el("div", { "class": "sds-lb-progress" }, "<span></span>");
+
+    var menu = el("div", { "class": "sds-steps-menu" });
+
+    menu.hidden = true;
+
+    var menuList = el("ol");
+
+    titles.forEach(function (t, i) {
+
+      var li = el("li");
+
+      var b = el("button", { type: "button" }, '<span class="sds-dot">' + (i + 1) + "</span><span>" + esc(t) + "</span>");
+
+      b.addEventListener("click", function () { closeMenu(); goTo(i); });
+
+      li.appendChild(b);
+
+      menuList.appendChild(li);
+
+    });
+
+    var allToggle = el("button", { type: "button", "class": "sds-all-toggle" });
+
+    menu.appendChild(menuList);
+
+    menu.appendChild(allToggle);
+
+    bar.appendChild(row);
+
+    bar.appendChild(track);
+
+    bar.appendChild(menu);
+
+    main.insertBefore(bar, intro);
+
+
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var parts = here.split("/");
+
+      map.modules.forEach(function (mod) {
+
+        if (mod.dir !== parts[0]) return;
+
+        mod.lessons.forEach(function (l) {
+
+          if (l.slug === parts[1]) {
+
+            titleEl.innerHTML = '<span class="sds-lb-num">' + mod.id + "." + l.n + "</span>" + esc(l.title);
+
+          }
+
+        });
+
+      });
+
+    });
+
+
+
+    function openMenu() { menu.hidden = false; stepsBtn.setAttribute("aria-expanded", "true"); }
+
+    function closeMenu() { menu.hidden = true; stepsBtn.setAttribute("aria-expanded", "false"); }
+
+    stepsBtn.addEventListener("click", function (e) {
+
+      e.stopPropagation();
+
+      if (menu.hidden) openMenu(); else closeMenu();
+
+    });
+
+    document.addEventListener("click", function (e) {
+
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+
+    });
+
+
+
+    // Step navigation under the steps
+
+    var nav = el("nav", { "class": "sds-stepnav", "aria-label": "Lesson steps" });
+
+    var backBtn = el("button", { type: "button", "class": "sds-btn sds-btn-ghost" }, '<i class="bi bi-arrow-left"></i> Back');
+
+    var label = el("div", { "class": "sds-stepnav-label" });
+
+    var nextBtn = el("button", { type: "button", "class": "sds-btn sds-btn-primary" }, 'Continue <i class="bi bi-arrow-right"></i>');
+
+    nav.appendChild(backBtn);
+
+    nav.appendChild(label);
+
+    nav.appendChild(nextBtn);
+
+    steps[steps.length - 1].parentNode.insertBefore(nav, steps[steps.length - 1].nextSibling);
+
+    backBtn.addEventListener("click", function () { goTo(current - 1); });
+
+    nextBtn.addEventListener("click", function () { goTo(current + 1); });
+
+
+
+    addFinish(steps[steps.length - 1]);
+
+
+
+    var stepStore = read(STEP, {}) || {};
+
+    var saved = stepStore[here] || { cur: 0, max: 0 };
+
+    var current = Math.min(saved.cur || 0, steps.length - 1);
+
+    var maxSeen = Math.min(saved.max || 0, steps.length - 1);
+
+
+
+    // A link to a heading (for example from search) opens the step that contains it.
+
+    function stepOf(target) {
+
+      for (var i = 0; i < steps.length; i++) if (steps[i].contains(target)) return i;
+
+      return -1;
+
+    }
+
+    if (window.location.hash.length > 1) {
+
+      var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      var s = target ? stepOf(target) : -1;
+
+      if (s >= 0) current = s;
+
+    }
+
+    document.addEventListener("click", function (e) {
+
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+
+      if (!a || a.closest(".sds-drawer")) return;
+
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+
+      var s2 = t ? stepOf(t) : -1;
+
+      if (s2 >= 0 && s2 !== current && !document.body.classList.contains("sds-all")) {
+
+        e.preventDefault();
+
+        goTo(s2, { scrollTo: t });
+
+      }
+
+    });
+
+
+
+    function setAll(on) {
+
+      document.body.classList.toggle("sds-all", on);
+
+      document.body.classList.toggle("sds-steps", !on);
+
+      allToggle.textContent = on ? "Show one step at a time" : "Show the whole lesson on one page";
+
+      write(VIEW, on);
+
+      window.dispatchEvent(new Event("resize"));
+
+    }
+
+    allToggle.addEventListener("click", function () {
+
+      closeMenu();
+
+      setAll(!document.body.classList.contains("sds-all"));
+
+    });
+
+
+
+    function goTo(i, opts) {
+
+      current = Math.max(0, Math.min(steps.length - 1, i));
+
+      maxSeen = Math.max(maxSeen, current);
+
+      steps.forEach(function (s, k) { s.classList.toggle("is-active", k === current); });
+
+      stepStore[here] = { cur: current, max: maxSeen };
+
+      write(STEP, stepStore);
+
+
+
+      stepsBtn.innerHTML = "Step " + (current + 1) + " of " + steps.length + ' <i class="bi bi-chevron-down"></i>';
+
+      track.firstChild.style.width = Math.round(100 * (current + 1) / steps.length) + "%";
+
+      Array.prototype.forEach.call(menuList.children, function (li, k) {
+
+        li.classList.toggle("is-current", k === current);
+
+        li.classList.toggle("is-seen", k < current || k <= maxSeen && k !== current);
+
+      });
+
+      backBtn.style.visibility = current === 0 ? "hidden" : "visible";
+
+      var last = current === steps.length - 1;
+
+      nextBtn.style.display = last ? "none" : "";
+
+      label.innerHTML = last ? "" : "Next: <strong>" + esc(titles[current + 1]) + "</strong>";
+
+      nextBtn.innerHTML = (current === 0 ? "Let's start" : "Continue") + ' <i class="bi bi-arrow-right"></i>';
+
+
+
+      // Live code boxes measure themselves when they become visible.
+
+      window.dispatchEvent(new Event("resize"));
+
+      if (opts && opts.initial) return;
+
+      if (opts && opts.scrollTo) {
+
+        opts.scrollTo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      } else {
+
+        var top = main.getBoundingClientRect().top + window.scrollY - 70;
+
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+      }
+
+    }
+
+
+
+    setAll(!!read(VIEW, false));
+
+    goTo(current, { initial: true });
+
+    if (window.location.hash.length > 1) {
+
+      var t0 = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+
+      if (t0) setTimeout(function () { t0.scrollIntoView({ block: "start" }); }, 50);
+
+    }
+
+  }
+
+
+
+  // The card at the end of a lesson: mark it complete and go on.
+
+  function addFinish(container) {
+
+    if (!here) return;
+
+    var box = el("section", { "class": "sds-finish", "aria-live": "polite" });
+
+    container.appendChild(box);
+
+    var nextLink = null;
+
+
+
+    function render() {
+
+      var doneOn = progress[here];
+
+      var html = '<img alt="" src="' + ROOT + 'assets/fizz.svg">';
+
+      if (doneOn) {
+
+        html += "<h3>Lesson complete!</h3><p>You finished it on " + esc(new Date(doneOn).toLocaleDateString()) + ". See you in the next one.</p>";
+
+      } else {
+
+        html += "<h3>You made it to the end!</h3><p>Mark the lesson complete to track your progress. It's saved in this browser.</p>";
+
+      }
+
+      html += '<div class="sds-finish-actions">';
+
+      if (!doneOn) html += '<button type="button" class="sds-btn sds-btn-primary" data-act="done"><i class="bi bi-check2"></i> Mark complete</button>';
+
+      if (nextLink) {
+
+        html += '<a class="sds-btn ' + (doneOn ? "sds-btn-primary" : "sds-btn-ghost") + '" href="' + nextLink.href + '">Next: ' + esc(nextLink.label) + ' <i class="bi bi-arrow-right"></i></a>';
+
+      } else {
+
+        html += '<a class="sds-btn sds-btn-ghost" href="' + ROOT + 'index.html">Back to home</a>';
+
+      }
+
+      if (doneOn) html += '<button type="button" class="sds-btn sds-btn-quiet" data-act="undo">Mark as not complete</button>';
+
+      html += "</div>";
+
+      box.innerHTML = html;
+
+    }
+
+
+
+    box.addEventListener("click", function (e) {
+
+      var b = e.target.closest("button[data-act]");
+
+      if (!b) return;
+
+      if (b.getAttribute("data-act") === "done") progress[here] = new Date().toISOString();
+
+      else delete progress[here];
+
+      write(STORE, progress);
+
+      render();
+
+      refreshProgress();
+
+      renderDrawer();
+
+    });
+
+
+
+    render();
+
+    courseMap().then(function (map) {
+
+      nextLink = followingLesson(map);
+
+      render();
+
+    });
+
+  }
+
+
+
+  // ---------- Course map drawer ----------
+
+  var drawer = null;
+
+  function setupDrawer() {
+
+    var tools = document.querySelector("#quarto-header .quarto-navbar-tools") ||
+
+      document.querySelector("#quarto-header .navbar .container-fluid");
+
+    if (!tools) return;
+
+    var btn = el("button", { type: "button", "class": "sds-map-btn", "aria-label": "Open the course map" },
+
+      '<i class="bi bi-grid-1x2"></i><span class="sds-map-label">Course</span>');
+
+    tools.appendChild(btn);
+
+
+
+    drawer = el("div", { "class": "sds-drawer" });
+
+    drawer.hidden = true;
+
+    drawer.innerHTML =
+
+      '<div class="sds-drawer-scrim"></div>' +
+
+      '<aside class="sds-drawer-panel" role="dialog" aria-modal="true" aria-label="Course map">' +
+
+      '<div class="sds-drawer-head"><img alt="" src="' + ROOT + 'assets/fizz.svg"><strong>Your course</strong>' +
+
+      '<button type="button" class="sds-icon-btn" data-close aria-label="Close"><i class="bi bi-x-lg"></i></button></div>' +
+
+      '<div class="sds-drawer-body"></div>' +
+
+      '<nav class="sds-drawer-links">' +
+
+      '<a href="' + ROOT + 'index.html"><i class="bi bi-house-heart"></i> Home</a>' +
+
+      '<a href="' + ROOT + 'study-plan.html"><i class="bi bi-calendar-heart"></i> Study plan</a>' +
+
+      '<a href="' + ROOT + 'syllabus.html"><i class="bi bi-map"></i> All modules</a>' +
+
+      '<a href="' + ROOT + 'guide.html"><i class="bi bi-question-circle"></i> How this course works</a>' +
+
+      "</nav></aside>";
+
+    document.body.appendChild(drawer);
+
+
+
+    function open() {
+
+      renderDrawer();
+
+      drawer.hidden = false;
+
+      drawer.querySelector("[data-close]").focus();
+
+    }
+
+    function close() {
+
+      drawer.hidden = true;
+
+      btn.focus();
+
+    }
+
+    btn.addEventListener("click", open);
+
+    drawer.querySelector(".sds-drawer-scrim").addEventListener("click", close);
+
+    drawer.querySelector("[data-close]").addEventListener("click", close);
+
+    document.addEventListener("keydown", function (e) {
+
+      if (e.key === "Escape" && drawer && !drawer.hidden) close();
+
+    });
+
+  }
+
+
+
+  function renderDrawer() {
+
+    if (!drawer) return;
+
+    courseMap().then(function (map) {
+
+      var body = drawer.querySelector(".sds-drawer-body");
+
+      var mod = currentModule(map);
+
+      if (!mod) {
+
+        body.innerHTML = '<p class="sds-small">Open <a href="' + ROOT + 'syllabus.html">the syllabus</a> to see every module.</p>';
+
+        return;
+
+      }
+
+      var done = doneCount(mod);
+
+      var items = mod.lessons.map(function (l) {
+
+        var key = lessonKey(mod, l);
+
+        var cls = (progress[key] ? "is-done " : "") + (key === here ? "is-current " : "") + (l.ready ? "" : "is-soon");
+
+        var num = '<span class="sds-num">' + (progress[key] ? "✓" : l.n) + "</span>";
+
+        var inner = l.ready
+
+          ? '<a href="' + lessonHref(mod, l) + '">' + num + esc(l.title) + "</a>"
+
+          : "<span>" + num + esc(l.title) + "</span>";
+
+        return '<li class="' + cls + '">' + inner + "</li>";
+
+      }).join("");
+
+      if (mod.project && mod.project.ready) {
+
+        items += '<li><a href="' + ROOT + "modules/" + mod.dir + '/project.html"><span class="sds-num"><i class="bi bi-star"></i></span>Module project</a></li>';
+
+      }
+
+      body.innerHTML =
+
+        '<div class="sds-drawer-module">' +
+
+        '<span class="sds-eyebrow">Module ' + esc(mod.id) + (mod.codes ? " · " + esc(mod.codes) : "") + "</span>" +
+
+        "<h4>" + esc(mod.title) + "</h4>" +
+
+        '<span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons complete</span>" +
+
+        '<ol class="sds-drawer-lessons">' + items + "</ol></div>";
+
+    });
+
+  }
+
+
+
+  // ---------- Home page panels ----------
+
+  function setupHome() {
+
+    var card = document.getElementById("sds-home-module");
+
+    if (!card) return;
+
+    courseMap().then(function (map) {
+
+      if (!map) return;
+
+      var mod = currentModule(map);
+
+      var up = nextUp(map, mod);
+
+      var done = doneCount(mod);
+
+      var start = document.getElementById("sds-home-start");
+
+      if (start && up) {
+
+        start.href = lessonHref(mod, up.lesson);
+
+        start.innerHTML = (done > 0 ? "Continue: " : "Start lesson ") + esc(mod.id + "." + up.lesson.n) +
+
+          ' <i class="bi bi-arrow-right"></i>';
+
+      }
+
+      var nextHtml = up
+
+        ? '<div class="sds-next"><div class="sds-next-text"><small>Up next</small><strong>' +
+
+          esc(mod.id + "." + up.lesson.n + " " + up.lesson.title) + "</strong></div>" +
+
+          '<a class="sds-btn sds-btn-primary" href="' + lessonHref(mod, up.lesson) + '">' +
+
+          (progress[lessonKey(mod, up.lesson)] ? "Review" : "Open lesson") + ' <i class="bi bi-arrow-right"></i></a></div>'
+
+        : '<div class="sds-next"><div class="sds-next-text"><small>Well done</small><strong>Every lesson that\'s ready in this module is complete.</strong></div></div>';
+
+      card.innerHTML =
+
+        '<span class="sds-eyebrow">You are here · Module ' + esc(mod.id) + "</span>" +
+
+        "<h2>" + esc(mod.title) + "</h2>" +
+
+        "<p>" + esc(mod.short) + "</p>" +
+
+        '<div class="module-progress" style="margin-bottom:0"><span class="progress-track"><span class="progress-fill" style="width:' +
+
+        Math.round(100 * done / Math.max(1, mod.lessons.length)) + '%"></span></span>' +
+
+        '<span class="progress-label">' + done + " of " + mod.lessons.length + " lessons</span></div>" +
+
+        nextHtml;
+
+
+
+      var journey = document.getElementById("sds-journey");
+
+      if (journey) {
+
+        journey.innerHTML = map.modules.map(function (m) {
+
+          var ready = m.lessons.some(function (l) { return l.ready; });
+
+          var cls = (m.dir === mod.dir ? "is-current " : "") + (ready ? "is-ready" : "");
+
+          return '<a class="' + cls + '" href="' + ROOT + "modules/" + m.dir + '/index.html" title="Module ' +
+
+            esc(m.id + ": " + m.title) + '">' + esc(m.id) + "</a>";
+
+        }).join("");
+
+      }
+
+    });
+
+  }
+
+
+
+  // ---------- Remember the last lesson ----------
+
+  function rememberLesson() {
+
+    if (!here) return;
+
+    var h1 = document.querySelector("h1.title");
+
+    write(LAST, { id: here, title: h1 ? h1.textContent.trim() : here, at: Date.now() });
+
+  }
+
+
+
+  // ---------- Study plan dates ----------
+
+  function setupPlan() {
+
+    var input = document.getElementById("plan-start");
+
+    if (!input) return;
+
+    var saved = read(PLAN, null);
+
+    if (saved) input.value = saved;
+
+    var end = document.getElementById("plan-end");
+
+    var fmt = { year: "numeric", month: "short", day: "numeric" };
+
+    function fill() {
+
+      var rows = document.querySelectorAll("tr[data-week]");
+
+      var start = input.value ? new Date(input.value + "T00:00:00") : null;
+
+      var last = 0;
+
+      rows.forEach(function (row) {
+
+        var week = parseInt(row.getAttribute("data-week"), 10);
+
+        last = Math.max(last, week);
+
+        var cell = row.querySelector(".week-date");
+
+        if (!cell) return;
+
+        if (!start || isNaN(start.getTime())) {
+
+          cell.textContent = "–";
+
+        } else {
+
+          var d = new Date(start.getTime());
+
+          d.setDate(d.getDate() + 7 * (week - 1));
+
+          cell.textContent = d.toLocaleDateString(undefined, fmt);
+
+        }
+
+      });
+
+      if (end) {
+
+        if (start && !isNaN(start.getTime())) {
+
+          var fin = new Date(start.getTime());
+
+          fin.setDate(fin.getDate() + 7 * last - 1);
+
+          end.textContent = "At one lesson a week you'd finish around " + fin.toLocaleDateString(undefined, fmt) + ".";
+
+        } else {
+
+          end.textContent = "Choose a start date to see a date next to every week.";
+
+        }
+
+      }
+
+    }
+
+    input.addEventListener("change", function () {
+
+      write(PLAN, input.value || null);
+
+      fill();
+
+    });
+
+    fill();
+
+  }
+
+
+
+  // Keep the sticky lesson bar just under the navbar.
+
+  function trackNavHeight() {
+
+    var header = document.getElementById("quarto-header");
+
+    if (!header) return;
+
+    function set() { document.body.style.setProperty("--sds-nav-h", header.offsetHeight + "px"); }
+
+    set();
+
+    window.addEventListener("resize", set);
+
+  }
+
+
+
+  function init() {
+
+    trackNavHeight();
+
+    setupQuizzes();
+
+    setupDrawer();
+
+    setupSteps();
+
+    rememberLesson();
+
+    setupHome();
+
+    setupPlan();
+
+    refreshProgress();
+
+  }
+
+
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener("DOMContentLoaded", init);
+
+  } else {
+
+    init();
+
+  }
+
+})();
+
+</script>
+
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W119
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../modules/04-statistical-computing";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/edijs7110-source\.github\.io\/statistics-course\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>An independent self-study course. Not affiliated with or endorsed by any university.</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Made with R, <a href="https://quarto.org">Quarto</a> and <a href="https://docs.r-wasm.org/webr/latest/">webR</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

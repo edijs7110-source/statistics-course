@@ -1,0 +1,42 @@
+[
+  {
+    "lot": "L26-013",
+    "received": "2026-03-27",
+    "assay_pct": 99.12,
+    "supplier": {
+      "id": "S2",
+      "name": "Plum Valley Supply",
+      "country": "Canada"
+    }
+  },
+  {
+    "lot": "L26-014",
+    "received": "2026-03-30",
+    "assay_pct": 98.84,
+    "supplier": {
+      "id": "S1",
+      "name": "Fizzwell Chemicals",
+      "country": "USA"
+    }
+  },
+  {
+    "lot": "L26-015",
+    "received": "2026-04-08",
+    "assay_pct": 99.3,
+    "supplier": {
+      "id": "S4",
+      "name": "Kestrel Industrial",
+      "country": "Germany"
+    }
+  },
+  {
+    "lot": "L26-016",
+    "received": "2026-04-13",
+    "assay_pct": 98.95,
+    "supplier": {
+      "id": "S3",
+      "name": "Rosewater Reagents",
+      "country": "USA"
+    }
+  }
+]

@@ -1,0 +1,179 @@
+---
+title: "Trade credit: a scorecard for the distribution business"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 8 project template.
+  Save this file in the top folder of your plant-study project, as credit-scorecard.qmd.
+  It expects the handover files, untouched, in data-raw/credit/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Pieter and
+  the finance director. Write the text for them.
+  Packages: tidyverse, rpart, rpart.plot, partykit, nnet, randomForest and gbm.
+  Don't read new_application_outcomes.csv until section 6.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+theme_set(theme_minimal(base_size = 12))
+
+accounts <- read_csv("data-raw/credit/credit_accounts.csv", show_col_types = FALSE)
+applications <- read_csv("data-raw/credit/new_applications.csv", show_col_types = FALSE)
+margin_good <- 6000    # EUR per year from a customer who pays
+loss_bad <- 25000      # EUR lost on a customer who goes 90+ days late
+auc <- function(p, y) {  # y is 0/1 or TRUE/FALSE
+  y <- as.logical(y); r <- rank(p); n1 <- sum(y); n0 <- sum(!y)
+  (sum(r[y]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+```
+
+## Summary for Pieter
+
+<!-- Write this section last, in plain words, in five or six sentences: the rule ("refuse credit
+     when ..."), what it would have earned on the 600 new applications against granting credit to
+     everyone, the main risk factors, the one-page tree and what it gives up, and the caveats. -->
+
+- **The rule:** ...
+- **What it earns:** ...
+- **What drives the risk:** ...
+- **The one-page tree:** ...
+- **Caveats:** ...
+
+## 1. The data
+
+<!-- What did you receive? The bad rate overall and by group. Which columns would be known when
+     the credit decision is made? -->
+
+```{r}
+#| label: look
+summary(accounts)
+accounts |> count(outcome)
+accounts |> group_by(company_type) |> summarise(n = n(), bad_rate = mean(outcome != "paid"))
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. -->
+
+```{r}
+#| label: clean
+clean <- function(d) {
+  d |>
+    mutate(
+      ratios_missing = as.integer(is.na(debt_ratio)),
+      # current_ratio = ..., debt_ratio = ...,       # how will each model see the gaps?
+      across(c(company_type, industry, credit_score_band), factor)
+    )
+}
+# credit <- accounts |> distinct() |> select(-collections_calls) |> clean() |>
+#   mutate(bad = as.integer(outcome != "paid"))           # reasons: ...
+```
+
+## 3. Partition
+
+```{r}
+#| label: partition
+#| eval: false
+set.seed(2026)
+part <- character(nrow(credit))
+for (cl in 0:1) {                                          # stratified 60/40
+  i <- which(credit$bad == cl)
+  part[i] <- sample(rep_len(c("train", "train", "train", "valid", "valid"), length(i)))
+}
+train <- credit[part == "train", ]; valid <- credit[part == "valid", ]
+```
+
+## 4. The models
+
+<!-- CHAID (by hand or with the CHAID package), pruned CART, a logistic regression with engineered
+     inputs, a neural network with weight decay, and a random forest or boosted model. -->
+
+```{r}
+#| label: cart
+#| eval: false
+set.seed(2026)
+big <- rpart(factor(bad) ~ ., data = select(train, -account, -outcome), method = "class", cp = 0)
+cart <- prune(big, cp = big$cptable[which.min(big$cptable[, "xerror"]), "CP"])
+p_cart <- predict(cart, valid)[, "1"]
+```
+
+```{r}
+#| label: other-models
+#| eval: false
+# p_logit <- ...
+# p_net <- ...
+# p_ensemble <- ...
+```
+
+## 5. Comparing the models
+
+<!-- Validation AUC, a gains chart, and the profit of each model at its best cut-off. -->
+
+```{r}
+#| label: compare
+#| eval: false
+scores <- tibble(cart = p_cart)                           # add the other models' columns
+profit_at <- function(p, y, cutoff) {                     # grant credit when p < cutoff
+  grant <- p < cutoff
+  margin_good * sum(grant & y == 0) - loss_bad * sum(grant & y == 1)
+}
+cutoffs <- seq(0.02, 0.6, by = 0.01)
+sapply(scores, function(p) c(auc = auc(p, valid$bad),
+                             best_profit = max(sapply(cutoffs, function(t) profit_at(p, valid$bad, t)))))
+```
+
+## 6. The rule, and the test on the new applications
+
+<!-- The break-even probability, the calibration check, then (only now) the new applications. -->
+
+```{r}
+#| label: test
+#| eval: false
+break_even <- margin_good / (margin_good + loss_bad)
+outcomes <- read_csv("data-raw/credit/new_application_outcomes.csv", show_col_types = FALSE)
+test <- applications |> left_join(outcomes, by = "account") |> clean() |> mutate(bad = as.integer(outcome != "paid"))
+p_test <- predict(final_model, test, ...)
+c(auc = auc(p_test, test$bad), refused = sum(p_test >= break_even),
+  profit = profit_at(p_test, test$bad, break_even), grant_everyone = profit_at(rep(0, nrow(test)), test$bad, 1))
+```
+
+## 7. What drives the risk
+
+<!-- Importance, partial dependence, and the one-page tree with its rules. -->
+
+```{r}
+#| label: one-page-tree
+#| eval: false
+small_tree <- prune(big, cp = ...)                         # 6 to 10 leaves
+rpart.plot(small_tree, type = 4, extra = 106, roundint = FALSE)
+rpart.rules(small_tree, roundint = FALSE)
+```
+
+## 8. Limitations
+
+<!-- What can't the model know? A recession, a new industry, the trial's own selection, ... -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~column,   ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```

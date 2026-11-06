@@ -1,0 +1,196 @@
+---
+title: "Campaign 2: an analysis-ready database"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: show
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 1 project template.
+  Save this file in the top folder of your plant-study project, as campaign2.qmd.
+  It expects the five handover files, untouched, in data-raw/campaign2/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)   # readr, dplyr, tidyr, stringr, lubridate, forcats, ggplot2
+library(readxl)
+library(jsonlite)
+library(janitor)
+library(validate)
+library(DBI)
+
+raw_dir <- "data-raw/campaign2"   # the handover files, never edited
+```
+
+## 1. The handover
+
+<!-- What did you receive, from whom, and what does the README say? -->
+
+```{r}
+#| label: read-raw
+batches_raw <- read_excel(file.path(raw_dir, "campaign2_batches.xlsx"), skip = 3)
+lab_raw <- read_delim(file.path(raw_dir, "campaign2_lab.csv"), delim = ";",
+                      locale = locale(encoding = "latin1"),
+                      col_types = cols(.default = col_character()))
+lots_raw <- fromJSON(file.path(raw_dir, "campaign2_lots.json"))
+suppliers <- read_csv(file.path(raw_dir, "suppliers.csv"), show_col_types = FALSE)
+
+glimpse(batches_raw)
+glimpse(lab_raw)
+str(lots_raw)
+```
+
+## 2. Problems found
+
+<!-- List every problem, where you found it, and how many rows it affects.
+     Start with the README's five, then add the ones you discover yourself. -->
+
+1. (README) Some batch codes are typed in lower case, or with a hyphen.
+2. ...
+
+## 3. Database design
+
+<!-- Which tables, which primary keys, and which foreign keys? Finish the diagram. -->
+
+```{mermaid}
+erDiagram
+  SUPPLIERS ||--o{ LOTS : supplies
+  SUPPLIERS {
+    text supplier_id PK
+    text name
+    text country
+  }
+  LOTS {
+    text lot_id PK
+    text supplier_id FK
+  }
+```
+
+## 4. Cleaning
+
+### Batches
+
+```{r}
+#| label: clean-batches
+batches <- batches_raw |>
+  clean_names()
+# Add your steps: batch codes, temperatures, times (local time to UTC),
+# duplicates, impossible values ...
+```
+
+### Lots
+
+```{r}
+#| label: clean-lots
+#| eval: false
+lots <- lots_raw |>
+  unnest_wider(supplier, names_sep = "_")
+# Which columns belong in the lots table, and which already live in the suppliers table?
+```
+
+### Lab results
+
+```{r}
+#| label: clean-lab
+#| eval: false
+lab <- lab_raw |>
+  mutate(batch_id = ...,
+         analyte = ...,
+         below_lod = ...,
+         value = ...)
+```
+
+## 5. Validation
+
+```{r}
+#| label: validate
+#| eval: false
+rules <- validator(
+  yield_ok = yield_pct >= 0 & yield_pct <= 100
+  # more rules ...
+)
+summary(confront(batches, rules))
+
+# Every foreign key must have a match: these should all return zero rows
+anti_join(batches, lots, by = "lot_id")
+anti_join(lab, batches, by = "batch_id")
+
+stopifnot(
+  "one row per batch" = !anyDuplicated(batches$batch_id)
+  # more assertions ...
+)
+```
+
+## 6. Missing values
+
+<!-- How many are there in each table? Why do you think they're missing?
+     How are they stored? What does that mean for someone analyzing these data? -->
+
+## 7. Building the database
+
+```{r}
+#| label: build-db
+#| eval: false
+db_path <- "data/campaign2.sqlite"
+if (file.exists(db_path)) file.remove(db_path)   # always rebuild from scratch
+con <- dbConnect(RSQLite::SQLite(), db_path)
+dbExecute(con, "PRAGMA foreign_keys = ON")
+
+dbExecute(con, "
+  CREATE TABLE suppliers (
+    supplier_id TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    country     TEXT
+  )")
+# CREATE TABLE lots, batches and lab_results here, with their keys and constraints.
+
+dbAppendTable(con, "suppliers", suppliers)
+# Append the other tables, parents before children.
+
+dbDisconnect(con)
+```
+
+## 8. Does it work?
+
+```{r}
+#| label: queries
+#| eval: false
+con <- dbConnect(RSQLite::SQLite(), "data/campaign2.sqlite")
+dbGetQuery(con, "SELECT COUNT(*) AS n FROM batches")
+# Your queries: results per analyte, the wettest lot and supplier,
+# yield and purity by catalyst, the batches with comments ...
+dbDisconnect(con)
+```
+
+## 9. Codebook
+
+| Table | Column | Type | Units | Allowed values | Missing values | Description |
+|---|---|---|---|---|---|---|
+| suppliers | supplier_id | text | | S1 to S4 | never missing | Supplier code, the primary key |
+| suppliers | name | text | | | never missing | Company name |
+| ... | | | | | | |
+
+## 10. Cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~decision,                         ~reason,                       ~rows,
+  "Example: fixed lower-case codes", "README, known issue 1",       NA
+)
+knitr::kable(cleaning_log)
+```
+
+## 11. Limitations and open questions
+
+<!-- What couldn't you fix? Which values would you ask the plant about? -->

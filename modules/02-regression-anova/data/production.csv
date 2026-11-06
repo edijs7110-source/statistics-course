@@ -1,0 +1,401 @@
+"batch_id","month","supplier","feed_water_ppm","temp_C","catalyst","on_spec"
+"Q0001","Jan","Rosewater",208,188.5,"B",TRUE
+"Q0002","Jan","Kestrel",328,178.7,"B",TRUE
+"Q0003","Jan","Fizzwell",220,192.7,"A",FALSE
+"Q0004","Jan","Rosewater",197,188.1,"B",FALSE
+"Q0005","Jan","Rosewater",203,184,"A",TRUE
+"Q0006","Jan","Kestrel",291,189.9,"A",FALSE
+"Q0007","Jan","Rosewater",158,185.2,"A",TRUE
+"Q0008","Jan","Fizzwell",220,189.5,"B",TRUE
+"Q0009","Jan","Plum Valley",196,188.6,"A",FALSE
+"Q0010","Jan","Rosewater",197,181.6,"A",TRUE
+"Q0011","Jan","Kestrel",262,187.8,"A",TRUE
+"Q0012","Jan","Fizzwell",192,182,"A",TRUE
+"Q0013","Jan","Rosewater",198,200.8,"A",TRUE
+"Q0014","Jan","Kestrel",309,184.2,"B",TRUE
+"Q0015","Jan","Plum Valley",185,182,"B",TRUE
+"Q0016","Jan","Fizzwell",210,186.5,"A",TRUE
+"Q0017","Jan","Kestrel",281,181.5,"A",TRUE
+"Q0018","Jan","Kestrel",294,183.2,"A",TRUE
+"Q0019","Jan","Plum Valley",211,184.4,"B",TRUE
+"Q0020","Jan","Plum Valley",187,196.7,"A",FALSE
+"Q0021","Jan","Plum Valley",217,192.2,"A",FALSE
+"Q0022","Jan","Rosewater",216,185.6,"A",FALSE
+"Q0023","Jan","Rosewater",194,191.1,"A",TRUE
+"Q0024","Feb","Plum Valley",225,184.7,"B",FALSE
+"Q0025","Feb","Kestrel",288,191.5,"B",FALSE
+"Q0026","Feb","Plum Valley",175,181.3,"A",TRUE
+"Q0027","Feb","Fizzwell",206,184.5,"A",TRUE
+"Q0028","Feb","Kestrel",305,191.7,"B",FALSE
+"Q0029","Feb","Rosewater",258,179.5,"A",TRUE
+"Q0030","Feb","Rosewater",187,180.2,"B",TRUE
+"Q0031","Feb","Fizzwell",196,192.4,"B",TRUE
+"Q0032","Feb","Plum Valley",211,180.5,"A",TRUE
+"Q0033","Feb","Plum Valley",212,190.2,"B",TRUE
+"Q0034","Feb","Fizzwell",193,186.8,"B",FALSE
+"Q0035","Feb","Fizzwell",258,178.2,"B",TRUE
+"Q0036","Feb","Rosewater",233,186,"B",TRUE
+"Q0037","Feb","Fizzwell",176,189.4,"B",TRUE
+"Q0038","Feb","Rosewater",184,185.3,"B",TRUE
+"Q0039","Feb","Fizzwell",209,187.3,"A",TRUE
+"Q0040","Feb","Rosewater",199,192.5,"A",TRUE
+"Q0041","Feb","Rosewater",211,182.6,"A",TRUE
+"Q0042","Feb","Fizzwell",217,181.5,"B",TRUE
+"Q0043","Feb","Kestrel",325,189.2,"B",FALSE
+"Q0044","Feb","Fizzwell",200,184.8,"B",TRUE
+"Q0045","Feb","Plum Valley",180,189.7,"A",TRUE
+"Q0046","Feb","Fizzwell",182,179.1,"A",TRUE
+"Q0047","Feb","Plum Valley",192,192.3,"A",TRUE
+"Q0048","Feb","Rosewater",197,174.9,"A",TRUE
+"Q0049","Feb","Fizzwell",238,182.9,"B",TRUE
+"Q0050","Feb","Fizzwell",197,193.5,"A",FALSE
+"Q0051","Feb","Plum Valley",182,188.8,"A",TRUE
+"Q0052","Feb","Rosewater",176,173.3,"A",TRUE
+"Q0053","Feb","Plum Valley",197,183.1,"A",TRUE
+"Q0054","Feb","Plum Valley",198,180.5,"A",TRUE
+"Q0055","Feb","Plum Valley",189,175.7,"B",TRUE
+"Q0056","Feb","Fizzwell",234,181.3,"B",TRUE
+"Q0057","Feb","Fizzwell",180,188.8,"B",TRUE
+"Q0058","Feb","Rosewater",217,184.5,"A",TRUE
+"Q0059","Feb","Fizzwell",164,173.4,"A",TRUE
+"Q0060","Feb","Plum Valley",199,193.2,"B",FALSE
+"Q0061","Feb","Fizzwell",200,190,"A",TRUE
+"Q0062","Feb","Rosewater",179,192.4,"B",TRUE
+"Q0063","Mar","Kestrel",312,188.5,"A",TRUE
+"Q0064","Mar","Kestrel",317,190.1,"B",TRUE
+"Q0065","Mar","Fizzwell",191,187.5,"B",TRUE
+"Q0066","Mar","Fizzwell",221,187.7,"B",TRUE
+"Q0067","Mar","Rosewater",169,176.2,"A",TRUE
+"Q0068","Mar","Rosewater",167,192.2,"B",TRUE
+"Q0069","Mar","Rosewater",192,181.4,"A",TRUE
+"Q0070","Mar","Rosewater",216,181.1,"A",TRUE
+"Q0071","Mar","Kestrel",301,185,"B",TRUE
+"Q0072","Mar","Rosewater",206,183.9,"A",TRUE
+"Q0073","Mar","Kestrel",298,181.8,"B",TRUE
+"Q0074","Mar","Rosewater",157,180,"A",TRUE
+"Q0075","Mar","Fizzwell",238,187.4,"B",TRUE
+"Q0076","Mar","Fizzwell",163,177.1,"B",TRUE
+"Q0077","Mar","Fizzwell",219,185.4,"A",TRUE
+"Q0078","Mar","Kestrel",309,181.9,"B",TRUE
+"Q0079","Mar","Rosewater",202,195.8,"A",TRUE
+"Q0080","Mar","Rosewater",190,186.4,"B",TRUE
+"Q0081","Mar","Fizzwell",154,179.9,"B",TRUE
+"Q0082","Mar","Fizzwell",171,193.2,"A",TRUE
+"Q0083","Mar","Plum Valley",181,186.2,"A",TRUE
+"Q0084","Mar","Fizzwell",199,183,"B",TRUE
+"Q0085","Mar","Kestrel",306,180.2,"B",TRUE
+"Q0086","Mar","Fizzwell",171,184,"A",TRUE
+"Q0087","Mar","Fizzwell",206,182.2,"B",TRUE
+"Q0088","Mar","Fizzwell",236,192.9,"A",TRUE
+"Q0089","Mar","Kestrel",292,177.9,"A",TRUE
+"Q0090","Mar","Fizzwell",213,191.9,"A",TRUE
+"Q0091","Mar","Plum Valley",189,180.1,"B",TRUE
+"Q0092","Mar","Fizzwell",169,182.7,"B",TRUE
+"Q0093","Mar","Fizzwell",223,174,"B",TRUE
+"Q0094","Mar","Kestrel",250,178.8,"A",TRUE
+"Q0095","Mar","Kestrel",323,188.7,"B",FALSE
+"Q0096","Mar","Rosewater",206,191.4,"B",TRUE
+"Q0097","Mar","Kestrel",304,174.6,"A",FALSE
+"Q0098","Mar","Rosewater",175,201.2,"B",TRUE
+"Q0099","Mar","Fizzwell",163,189.1,"B",TRUE
+"Q0100","Mar","Kestrel",290,184.7,"A",TRUE
+"Q0101","Mar","Fizzwell",241,182.4,"B",TRUE
+"Q0102","Mar","Fizzwell",194,186.8,"A",TRUE
+"Q0103","Mar","Plum Valley",223,178.8,"A",TRUE
+"Q0104","Apr","Kestrel",288,182.7,"A",TRUE
+"Q0105","Apr","Rosewater",215,189.1,"B",TRUE
+"Q0106","Apr","Fizzwell",184,183,"A",TRUE
+"Q0107","Apr","Kestrel",270,187.4,"B",TRUE
+"Q0108","Apr","Fizzwell",208,185.6,"A",TRUE
+"Q0109","Apr","Plum Valley",211,192.1,"A",TRUE
+"Q0110","Apr","Rosewater",204,186.5,"B",TRUE
+"Q0111","Apr","Fizzwell",232,198.2,"A",FALSE
+"Q0112","Apr","Rosewater",188,184.3,"B",TRUE
+"Q0113","Apr","Rosewater",187,179.5,"A",TRUE
+"Q0114","Apr","Rosewater",165,186.7,"B",TRUE
+"Q0115","Apr","Fizzwell",177,183.1,"A",TRUE
+"Q0116","Apr","Plum Valley",182,180.1,"B",FALSE
+"Q0117","Apr","Fizzwell",216,192.3,"A",TRUE
+"Q0118","Apr","Rosewater",247,175.2,"A",TRUE
+"Q0119","Apr","Kestrel",306,180.8,"B",TRUE
+"Q0120","Apr","Plum Valley",152,189.5,"B",TRUE
+"Q0121","Apr","Rosewater",200,184.6,"B",TRUE
+"Q0122","Apr","Fizzwell",212,183.4,"B",TRUE
+"Q0123","Apr","Rosewater",194,190.9,"A",FALSE
+"Q0124","Apr","Fizzwell",195,175.3,"A",TRUE
+"Q0125","Apr","Fizzwell",191,193.3,"A",FALSE
+"Q0126","Apr","Rosewater",202,180.3,"B",TRUE
+"Q0127","Apr","Kestrel",312,183.5,"B",TRUE
+"Q0128","Apr","Fizzwell",193,191,"B",TRUE
+"Q0129","Apr","Fizzwell",173,184.2,"A",TRUE
+"Q0130","Apr","Rosewater",168,181.4,"A",TRUE
+"Q0131","Apr","Fizzwell",175,189.9,"B",FALSE
+"Q0132","Apr","Fizzwell",212,189.2,"B",TRUE
+"Q0133","May","Plum Valley",136,186.1,"A",TRUE
+"Q0134","May","Plum Valley",185,188.6,"B",FALSE
+"Q0135","May","Kestrel",293,189.6,"A",TRUE
+"Q0136","May","Kestrel",315,179.6,"A",FALSE
+"Q0137","May","Plum Valley",158,184,"B",TRUE
+"Q0138","May","Kestrel",274,181.2,"A",FALSE
+"Q0139","May","Plum Valley",179,179.4,"B",TRUE
+"Q0140","May","Plum Valley",216,184.4,"A",TRUE
+"Q0141","May","Rosewater",207,183.6,"A",TRUE
+"Q0142","May","Kestrel",261,189.5,"A",FALSE
+"Q0143","May","Fizzwell",224,184.4,"A",TRUE
+"Q0144","May","Kestrel",287,197.8,"B",TRUE
+"Q0145","May","Fizzwell",209,187,"A",TRUE
+"Q0146","May","Fizzwell",208,190.7,"A",FALSE
+"Q0147","May","Fizzwell",205,186.4,"B",TRUE
+"Q0148","May","Rosewater",179,187.1,"A",TRUE
+"Q0149","May","Fizzwell",182,190.8,"B",FALSE
+"Q0150","May","Plum Valley",235,193.9,"B",FALSE
+"Q0151","May","Rosewater",171,189.8,"B",TRUE
+"Q0152","May","Fizzwell",193,187.1,"A",TRUE
+"Q0153","May","Fizzwell",243,184.7,"A",TRUE
+"Q0154","May","Kestrel",274,176.7,"B",TRUE
+"Q0155","May","Plum Valley",187,180.3,"A",TRUE
+"Q0156","May","Kestrel",264,185,"A",FALSE
+"Q0157","May","Plum Valley",194,194.5,"A",FALSE
+"Q0158","May","Fizzwell",197,191.4,"A",FALSE
+"Q0159","May","Rosewater",181,188.6,"B",TRUE
+"Q0160","Jun","Kestrel",233,186.1,"A",TRUE
+"Q0161","Jun","Plum Valley",217,177.4,"A",TRUE
+"Q0162","Jun","Rosewater",209,188.6,"B",TRUE
+"Q0163","Jun","Fizzwell",154,184.6,"B",TRUE
+"Q0164","Jun","Plum Valley",176,178.7,"B",TRUE
+"Q0165","Jun","Plum Valley",211,187.4,"B",TRUE
+"Q0166","Jun","Plum Valley",207,184.5,"B",TRUE
+"Q0167","Jun","Fizzwell",217,177.3,"A",TRUE
+"Q0168","Jun","Fizzwell",129,181.1,"A",TRUE
+"Q0169","Jun","Kestrel",284,185.1,"A",FALSE
+"Q0170","Jun","Kestrel",297,186.4,"A",FALSE
+"Q0171","Jun","Fizzwell",216,188,"A",FALSE
+"Q0172","Jun","Rosewater",214,182,"A",TRUE
+"Q0173","Jun","Plum Valley",179,198.4,"A",TRUE
+"Q0174","Jun","Plum Valley",223,184.3,"A",TRUE
+"Q0175","Jun","Fizzwell",173,185,"A",TRUE
+"Q0176","Jun","Fizzwell",169,186.4,"B",TRUE
+"Q0177","Jun","Rosewater",256,180.6,"A",FALSE
+"Q0178","Jun","Plum Valley",191,186.8,"A",TRUE
+"Q0179","Jun","Rosewater",175,187,"A",TRUE
+"Q0180","Jun","Plum Valley",175,185.3,"A",TRUE
+"Q0181","Jun","Kestrel",264,187,"B",TRUE
+"Q0182","Jun","Kestrel",307,190.8,"A",FALSE
+"Q0183","Jun","Fizzwell",153,185.8,"B",TRUE
+"Q0184","Jun","Fizzwell",163,178.3,"A",TRUE
+"Q0185","Jun","Rosewater",165,188.6,"B",TRUE
+"Q0186","Jun","Rosewater",214,197.2,"A",TRUE
+"Q0187","Jun","Plum Valley",194,180.3,"A",TRUE
+"Q0188","Jun","Plum Valley",192,189.1,"B",TRUE
+"Q0189","Jun","Fizzwell",184,186.3,"B",FALSE
+"Q0190","Jun","Fizzwell",248,176,"A",TRUE
+"Q0191","Jun","Rosewater",190,189.2,"A",TRUE
+"Q0192","Jun","Fizzwell",185,181.8,"A",TRUE
+"Q0193","Jun","Fizzwell",204,186.8,"B",FALSE
+"Q0194","Jun","Rosewater",193,171.9,"A",TRUE
+"Q0195","Jun","Plum Valley",165,189.5,"B",TRUE
+"Q0196","Jun","Rosewater",207,191.4,"B",TRUE
+"Q0197","Jun","Kestrel",313,188,"B",TRUE
+"Q0198","Jun","Fizzwell",209,184.7,"B",TRUE
+"Q0199","Jun","Kestrel",287,179.6,"A",TRUE
+"Q0200","Jul","Plum Valley",185,187.9,"B",TRUE
+"Q0201","Jul","Kestrel",289,190.1,"B",FALSE
+"Q0202","Jul","Rosewater",203,178.5,"A",FALSE
+"Q0203","Jul","Fizzwell",185,188.4,"B",TRUE
+"Q0204","Jul","Kestrel",290,173.9,"B",TRUE
+"Q0205","Jul","Plum Valley",194,190.4,"B",FALSE
+"Q0206","Jul","Fizzwell",186,178.6,"B",TRUE
+"Q0207","Jul","Kestrel",280,178.4,"A",TRUE
+"Q0208","Jul","Fizzwell",159,194.2,"A",FALSE
+"Q0209","Jul","Fizzwell",227,184,"B",TRUE
+"Q0210","Jul","Fizzwell",233,179.4,"A",TRUE
+"Q0211","Jul","Fizzwell",227,184.7,"B",TRUE
+"Q0212","Jul","Fizzwell",146,186.9,"A",FALSE
+"Q0213","Jul","Rosewater",185,185.2,"B",TRUE
+"Q0214","Jul","Fizzwell",173,187,"A",TRUE
+"Q0215","Jul","Fizzwell",176,193.8,"A",FALSE
+"Q0216","Jul","Rosewater",183,180.7,"B",TRUE
+"Q0217","Jul","Plum Valley",188,185.2,"B",TRUE
+"Q0218","Jul","Fizzwell",185,180.8,"B",TRUE
+"Q0219","Jul","Kestrel",287,178.1,"A",TRUE
+"Q0220","Jul","Plum Valley",259,180.5,"B",TRUE
+"Q0221","Jul","Fizzwell",174,191.3,"B",TRUE
+"Q0222","Jul","Plum Valley",171,183.1,"A",TRUE
+"Q0223","Jul","Plum Valley",166,178.4,"A",TRUE
+"Q0224","Jul","Fizzwell",180,192,"B",TRUE
+"Q0225","Jul","Plum Valley",158,186.5,"B",TRUE
+"Q0226","Jul","Kestrel",287,179.2,"B",TRUE
+"Q0227","Jul","Rosewater",225,184.8,"B",TRUE
+"Q0228","Jul","Rosewater",167,181.7,"B",TRUE
+"Q0229","Jul","Plum Valley",193,197,"B",TRUE
+"Q0230","Jul","Fizzwell",132,188.8,"B",TRUE
+"Q0231","Aug","Rosewater",224,199.1,"B",FALSE
+"Q0232","Aug","Fizzwell",170,190,"A",FALSE
+"Q0233","Aug","Plum Valley",181,192.2,"A",TRUE
+"Q0234","Aug","Rosewater",200,176.9,"B",TRUE
+"Q0235","Aug","Plum Valley",189,181,"B",TRUE
+"Q0236","Aug","Rosewater",169,177.6,"B",TRUE
+"Q0237","Aug","Plum Valley",228,196.4,"B",FALSE
+"Q0238","Aug","Rosewater",162,181,"B",TRUE
+"Q0239","Aug","Plum Valley",183,189.7,"A",TRUE
+"Q0240","Aug","Rosewater",195,194.3,"B",TRUE
+"Q0241","Aug","Rosewater",183,185.1,"B",TRUE
+"Q0242","Aug","Fizzwell",207,176,"B",TRUE
+"Q0243","Aug","Fizzwell",231,184.1,"A",FALSE
+"Q0244","Aug","Plum Valley",206,181.3,"B",TRUE
+"Q0245","Aug","Kestrel",289,182,"B",TRUE
+"Q0246","Aug","Kestrel",248,181.3,"B",TRUE
+"Q0247","Aug","Plum Valley",176,189.5,"B",FALSE
+"Q0248","Aug","Kestrel",321,188.5,"A",TRUE
+"Q0249","Aug","Fizzwell",240,172.5,"B",TRUE
+"Q0250","Aug","Kestrel",311,183.2,"A",FALSE
+"Q0251","Aug","Kestrel",254,183.8,"A",FALSE
+"Q0252","Aug","Plum Valley",235,184.9,"B",TRUE
+"Q0253","Aug","Rosewater",194,192.1,"B",TRUE
+"Q0254","Aug","Fizzwell",200,188.3,"A",TRUE
+"Q0255","Aug","Rosewater",206,184.7,"A",FALSE
+"Q0256","Aug","Rosewater",166,184.9,"B",TRUE
+"Q0257","Aug","Plum Valley",201,190.2,"B",FALSE
+"Q0258","Aug","Fizzwell",230,188.2,"A",FALSE
+"Q0259","Aug","Rosewater",181,186.9,"A",TRUE
+"Q0260","Aug","Fizzwell",196,186.4,"B",TRUE
+"Q0261","Aug","Fizzwell",191,183.7,"A",FALSE
+"Q0262","Aug","Fizzwell",215,192.2,"B",TRUE
+"Q0263","Sep","Fizzwell",214,179.3,"B",TRUE
+"Q0264","Sep","Fizzwell",188,184,"B",TRUE
+"Q0265","Sep","Fizzwell",196,185.5,"B",TRUE
+"Q0266","Sep","Fizzwell",183,183.1,"A",TRUE
+"Q0267","Sep","Fizzwell",164,184.6,"B",TRUE
+"Q0268","Sep","Rosewater",164,178.6,"A",TRUE
+"Q0269","Sep","Plum Valley",256,179,"B",TRUE
+"Q0270","Sep","Kestrel",297,175,"B",TRUE
+"Q0271","Sep","Kestrel",262,177.8,"B",FALSE
+"Q0272","Sep","Rosewater",206,185.1,"A",TRUE
+"Q0273","Sep","Kestrel",311,191,"A",FALSE
+"Q0274","Sep","Kestrel",252,181.4,"B",TRUE
+"Q0275","Sep","Plum Valley",211,187.9,"B",TRUE
+"Q0276","Sep","Kestrel",334,186.1,"A",TRUE
+"Q0277","Sep","Kestrel",322,184.3,"B",FALSE
+"Q0278","Sep","Fizzwell",243,182.2,"B",TRUE
+"Q0279","Sep","Fizzwell",198,192.1,"A",TRUE
+"Q0280","Sep","Plum Valley",213,178.7,"B",TRUE
+"Q0281","Sep","Plum Valley",159,178.9,"A",TRUE
+"Q0282","Sep","Kestrel",284,185,"A",TRUE
+"Q0283","Sep","Fizzwell",207,193.6,"B",TRUE
+"Q0284","Sep","Fizzwell",178,191.5,"B",TRUE
+"Q0285","Sep","Fizzwell",192,181.3,"B",TRUE
+"Q0286","Sep","Plum Valley",186,186.3,"B",TRUE
+"Q0287","Sep","Fizzwell",163,185.3,"A",TRUE
+"Q0288","Sep","Kestrel",298,202,"A",FALSE
+"Q0289","Sep","Kestrel",247,185.3,"A",TRUE
+"Q0290","Sep","Fizzwell",150,180.6,"B",TRUE
+"Q0291","Sep","Kestrel",304,193.5,"B",FALSE
+"Q0292","Sep","Rosewater",180,180.7,"B",TRUE
+"Q0293","Sep","Plum Valley",165,178.2,"B",TRUE
+"Q0294","Sep","Fizzwell",262,196.3,"A",FALSE
+"Q0295","Sep","Plum Valley",196,182.6,"B",TRUE
+"Q0296","Sep","Kestrel",310,185.6,"B",FALSE
+"Q0297","Sep","Rosewater",221,193.9,"A",TRUE
+"Q0298","Oct","Fizzwell",231,174.1,"A",TRUE
+"Q0299","Oct","Plum Valley",215,177.2,"B",TRUE
+"Q0300","Oct","Fizzwell",197,178.8,"A",TRUE
+"Q0301","Oct","Rosewater",179,185.8,"B",TRUE
+"Q0302","Oct","Plum Valley",209,186.1,"A",TRUE
+"Q0303","Oct","Fizzwell",195,180.5,"A",TRUE
+"Q0304","Oct","Fizzwell",139,177.1,"A",TRUE
+"Q0305","Oct","Rosewater",221,181.1,"B",TRUE
+"Q0306","Oct","Rosewater",212,189.9,"A",TRUE
+"Q0307","Oct","Fizzwell",227,177.9,"A",TRUE
+"Q0308","Oct","Rosewater",200,175.7,"A",TRUE
+"Q0309","Oct","Plum Valley",202,186.3,"B",TRUE
+"Q0310","Oct","Plum Valley",224,187.2,"A",FALSE
+"Q0311","Oct","Fizzwell",237,186.9,"A",TRUE
+"Q0312","Oct","Rosewater",176,189,"A",TRUE
+"Q0313","Oct","Plum Valley",188,182.1,"B",TRUE
+"Q0314","Oct","Fizzwell",211,181.2,"A",FALSE
+"Q0315","Oct","Plum Valley",162,194.5,"B",TRUE
+"Q0316","Oct","Plum Valley",213,179.1,"B",TRUE
+"Q0317","Oct","Plum Valley",175,179.1,"B",TRUE
+"Q0318","Oct","Plum Valley",155,190.3,"B",TRUE
+"Q0319","Oct","Rosewater",196,193.3,"B",FALSE
+"Q0320","Oct","Kestrel",297,192.5,"A",TRUE
+"Q0321","Oct","Plum Valley",244,188.7,"A",FALSE
+"Q0322","Oct","Fizzwell",195,191.3,"B",TRUE
+"Q0323","Oct","Plum Valley",228,176.1,"B",TRUE
+"Q0324","Oct","Kestrel",299,188.8,"B",TRUE
+"Q0325","Oct","Fizzwell",165,179.6,"B",TRUE
+"Q0326","Oct","Fizzwell",211,181.9,"B",TRUE
+"Q0327","Oct","Plum Valley",158,171.1,"B",TRUE
+"Q0328","Nov","Fizzwell",164,184.4,"B",TRUE
+"Q0329","Nov","Plum Valley",181,183.3,"A",TRUE
+"Q0330","Nov","Fizzwell",260,183.2,"A",TRUE
+"Q0331","Nov","Fizzwell",188,174.9,"A",TRUE
+"Q0332","Nov","Fizzwell",183,192.7,"B",TRUE
+"Q0333","Nov","Fizzwell",156,188.3,"B",TRUE
+"Q0334","Nov","Rosewater",205,188.5,"A",FALSE
+"Q0335","Nov","Rosewater",151,179,"B",TRUE
+"Q0336","Nov","Plum Valley",148,190,"A",TRUE
+"Q0337","Nov","Rosewater",233,181.4,"B",TRUE
+"Q0338","Nov","Plum Valley",190,178.9,"B",TRUE
+"Q0339","Nov","Rosewater",206,179.8,"A",TRUE
+"Q0340","Nov","Fizzwell",191,179,"B",TRUE
+"Q0341","Nov","Rosewater",227,185.9,"B",TRUE
+"Q0342","Nov","Kestrel",292,200,"B",FALSE
+"Q0343","Nov","Rosewater",141,183.4,"B",TRUE
+"Q0344","Nov","Rosewater",201,190.5,"A",TRUE
+"Q0345","Nov","Plum Valley",197,183.7,"A",TRUE
+"Q0346","Nov","Rosewater",191,188.7,"B",FALSE
+"Q0347","Nov","Kestrel",305,193,"B",FALSE
+"Q0348","Nov","Fizzwell",225,177.1,"A",TRUE
+"Q0349","Nov","Fizzwell",159,185.1,"A",TRUE
+"Q0350","Nov","Plum Valley",196,188.2,"A",TRUE
+"Q0351","Nov","Kestrel",270,187.9,"A",TRUE
+"Q0352","Nov","Fizzwell",210,193.2,"B",TRUE
+"Q0353","Nov","Fizzwell",188,194.1,"B",TRUE
+"Q0354","Nov","Rosewater",135,183.1,"A",TRUE
+"Q0355","Nov","Fizzwell",177,180.2,"B",TRUE
+"Q0356","Nov","Plum Valley",178,182.2,"B",TRUE
+"Q0357","Nov","Rosewater",191,179.3,"A",FALSE
+"Q0358","Nov","Rosewater",195,188.4,"A",TRUE
+"Q0359","Nov","Fizzwell",177,180.8,"B",TRUE
+"Q0360","Nov","Fizzwell",193,185.3,"B",TRUE
+"Q0361","Nov","Fizzwell",196,180.7,"A",FALSE
+"Q0362","Nov","Kestrel",265,182.1,"A",TRUE
+"Q0363","Dec","Rosewater",193,183.3,"B",TRUE
+"Q0364","Dec","Rosewater",188,182.6,"A",FALSE
+"Q0365","Dec","Rosewater",227,180.8,"B",TRUE
+"Q0366","Dec","Kestrel",315,188.8,"B",TRUE
+"Q0367","Dec","Kestrel",317,181.8,"A",FALSE
+"Q0368","Dec","Plum Valley",185,190,"B",TRUE
+"Q0369","Dec","Plum Valley",209,184.8,"B",TRUE
+"Q0370","Dec","Fizzwell",189,197,"B",FALSE
+"Q0371","Dec","Rosewater",206,184.2,"A",TRUE
+"Q0372","Dec","Plum Valley",188,182.5,"B",TRUE
+"Q0373","Dec","Rosewater",200,191.6,"A",FALSE
+"Q0374","Dec","Plum Valley",232,174.8,"A",FALSE
+"Q0375","Dec","Plum Valley",195,189.3,"B",FALSE
+"Q0376","Dec","Rosewater",223,192.6,"B",FALSE
+"Q0377","Dec","Rosewater",196,189.3,"A",TRUE
+"Q0378","Dec","Fizzwell",214,189.8,"A",FALSE
+"Q0379","Dec","Rosewater",193,185,"A",TRUE
+"Q0380","Dec","Kestrel",341,179.3,"B",TRUE
+"Q0381","Dec","Plum Valley",178,173.3,"A",TRUE
+"Q0382","Dec","Fizzwell",208,182.9,"A",TRUE
+"Q0383","Dec","Kestrel",321,186,"B",TRUE
+"Q0384","Dec","Plum Valley",205,195.6,"A",FALSE
+"Q0385","Dec","Plum Valley",167,183.7,"B",TRUE
+"Q0386","Dec","Kestrel",306,195.4,"A",FALSE
+"Q0387","Dec","Plum Valley",209,185.7,"B",FALSE
+"Q0388","Dec","Plum Valley",184,185.3,"B",TRUE
+"Q0389","Dec","Rosewater",237,189.5,"B",TRUE
+"Q0390","Dec","Fizzwell",193,187.5,"A",FALSE
+"Q0391","Dec","Plum Valley",195,190.6,"A",TRUE
+"Q0392","Dec","Fizzwell",200,187.6,"B",TRUE
+"Q0393","Dec","Plum Valley",210,180.2,"B",TRUE
+"Q0394","Dec","Plum Valley",185,183.9,"B",TRUE
+"Q0395","Dec","Kestrel",244,181.2,"B",TRUE
+"Q0396","Dec","Rosewater",204,189,"A",TRUE
+"Q0397","Dec","Plum Valley",208,190.8,"B",TRUE
+"Q0398","Dec","Rosewater",160,197,"B",TRUE
+"Q0399","Dec","Fizzwell",146,183.8,"A",FALSE
+"Q0400","Dec","Plum Valley",229,187.4,"A",TRUE

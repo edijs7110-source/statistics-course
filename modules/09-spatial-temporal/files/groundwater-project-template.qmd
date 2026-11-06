@@ -1,0 +1,158 @@
+---
+title: "Benzene in groundwater: is the plume going away?"
+author: "Your name"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+<!--
+  Module 9 project template.
+  Save this file in the top folder of your plant-study project, as groundwater-benzene.qmd.
+  It expects the handover files, untouched, in data-raw/groundwater/.
+  Click "Render" in RStudio (or press Ctrl+Shift+K) to build the report.
+  Chunks marked "eval: false" don't run yet. Remove that line when you've filled them in.
+  The code is folded in the report ("code-fold: true"), because the readers are Hana and
+  the regulator. Write the text for them.
+  Packages: tidyverse, sf and gstat (and survival for the stretch goal).
+-->
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(sf)
+library(gstat)
+theme_set(theme_minimal(base_size = 12))
+
+wells_raw <- read_csv("data-raw/groundwater/wells.csv", col_types = "cccd")   # x, y read as text on purpose
+gw_raw <- read_csv("data-raw/groundwater/groundwater_benzene.csv", col_types = "cDcc")
+tank_farm <- c(482900, 5700700)        # the old tank farm, UTM zone 32N (EPSG:32632)
+supply_well <- c(484700, 5700750)      # the town's drinking-water well, PW-1
+limit_map <- 10                        # ug/L, the regulator's mapping threshold
+limit_dw <- 1                          # ug/L, the drinking-water standard
+```
+
+## Summary for the regulator
+
+<!-- Write this section last, in plain words, in five or six sentences: where benzene is above
+     10 ug/L today and how sure we are, whether the plume is shrinking (half-life) and moving
+     (speed, direction), what the sentinel wells show, and your recommendation. -->
+
+- **Today:** ...
+- **Shrinking?** ...
+- **Moving?** ...
+- **The sentinel wells:** ...
+- **Recommendation:** ...
+
+## 1. The data
+
+<!-- What did you receive? How many wells, rounds and results? Map the wells. -->
+
+```{r}
+#| label: look
+glimpse(wells_raw)
+glimpse(gw_raw)
+gw_raw |> count(date, lab)
+gw_raw |> filter(!str_detect(result, "^[0-9.]+$")) |> count(result)
+```
+
+## 2. Cleaning
+
+<!-- Record every decision here, and in the cleaning log at the end. -->
+
+```{r}
+#| label: clean-wells
+wells <- wells_raw |> mutate(x = as.numeric(x), y = as.numeric(y))
+wells |> filter(x < 1000)                                 # which well is in a different CRS?
+# fix it: transform that well's point from EPSG:4326 to EPSG:32632 with st_transform()
+```
+
+```{r}
+#| label: clean-results
+#| eval: false
+gw <- gw_raw |>
+  distinct() |>                                           # reasons: ...
+  filter(result != "dry") |>
+  mutate(censored = str_detect(result, "^<"),
+         value = as.numeric(str_remove(result, "<")))
+# the unit error: compare the medians by round and lab, then fix the round in mg/L
+gw |> filter(!censored) |> group_by(date, lab) |> summarise(median = median(value), .groups = "drop") |> arrange(median)
+# gw <- gw |> mutate(value = if_else(..., value * 1000, value))
+gw <- gw |>
+  left_join(wells, by = "well") |>
+  mutate(log_value = log(if_else(censored, value / 2, value)),     # half the detection limit, for now
+         years = as.numeric(date - as.Date("2019-01-01")) / 365.25)
+```
+
+## 3. Today's plume
+
+<!-- The 2026 Q3 round: variogram, model, kriging, standard errors, cross-validation and the
+     probability of exceeding 10 ug/L. -->
+
+```{r}
+#| label: today
+#| eval: false
+now <- gw |> filter(date == max(date))
+v <- variogram(log_value ~ 1, ~x + y, data = now, cutoff = 1200, width = 100)
+plot(v)
+model <- fit.variogram(v, vgm(psill = ..., model = "Exp", range = ..., nugget = ...))
+grid <- expand_grid(x = seq(482300, 484800, by = 25), y = seq(5700000, 5701400, by = 25))
+k <- krige(log_value ~ 1, ~x + y, now, newdata = grid, model = model)
+# maps: exp(k$var1.pred), sqrt(k$var1.var), and P(exceed 10) = 1 - pnorm((log(10) - pred) / se)
+cv <- krige.cv(log_value ~ 1, ~x + y, now, model = model)
+c(rmse = sqrt(mean(cv$residual^2)), mean_sq_z = mean(cv$zscore^2))
+```
+
+## 4. Is the plume shrinking and moving?
+
+<!-- Krige every round on the same grid, then the mass proxy, the area above 10 ug/L and the
+     centroid, over time. A half-life with an interval; the centroid's speed and direction. -->
+
+```{r}
+#| label: trend
+#| eval: false
+rounds <- sort(unique(gw$date))
+by_round <- map_dfr(rounds, function(d) {
+  kk <- krige(log_value ~ 1, ~x + y, filter(gw, date == d), newdata = grid, model = model, debug.level = 0)
+  conc <- exp(kk$var1.pred)
+  tibble(date = d, mass = sum(conc), area10_ha = sum(kk$var1.pred > log(limit_map)) * 25^2 / 1e4,
+         cx = sum(grid$x * conc) / sum(conc), cy = sum(grid$y * conc) / sum(conc))
+})
+fit_mass <- lm(log(mass) ~ as.numeric(date - as.Date("2019-01-01")), data = by_round)
+# half-life in years: ...
+```
+
+## 5. The sentinel wells
+
+<!-- MW-36 and MW-37: their results, their trend (with the censoring handled), and when they
+     might reach 1 ug/L if the trend continues. What can't the data say yet? -->
+
+```{r}
+#| label: sentinels
+#| eval: false
+gw |> filter(well %in% c("MW-36", "MW-37")) |>
+  ggplot(aes(date, value, shape = censored)) + geom_point() + facet_wrap(~ well) +
+  geom_hline(yintercept = limit_dw, linetype = "dashed")
+```
+
+## 6. Limitations and recommendation
+
+<!-- What can't the analysis know? One round's map from 40 wells, the half-DL substitution,
+     the wells' screen depths, a changing groundwater flow, ... What should Hana do next? -->
+
+## Appendix: cleaning log
+
+```{r}
+#| label: cleaning-log
+cleaning_log <- tribble(
+  ~item,     ~decision,   ~reason,
+  "Example", "Corrected", "Explain why"
+)
+knitr::kable(cleaning_log)
+```
